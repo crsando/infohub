@@ -1,0 +1,11 @@
+# 虚拟环境（用 uv venv 重建）
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# ⚠️ 配置里含明文 token，绝不能提交
+config.json
+*.local.json

@@ -1,0 +1,1234 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "TikHub API（仅保留公众号 / 微信搜索相关接口）",
+  "version": "V5.3.2",
+  "x-extracted": "2026-10-02，自 https://api.tikhub.io/openapi.json 裁剪"
+ },
+ "paths": {
+  "/api/v1/wechat_mp/v2/fetch_article_detail": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章详情/Get WeChat MP Article Detail",
+    "description": "# [中文]\n### 用途:\n- 传文章 URL，返回文章正文 / 标题 / 作者 / 封面 / 发布时间 / 合集信息等。\n- 无论 `raw` 取值，嵌套的 `content` JSON 串都会被解析成对象（结构归一化），`raw` 只控制外层字段的投影范围。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n- ⚠️ 大整数 ID 精度：响应中的 `comment_id` / `msgId` 等为 64 位大整数，超出 JavaScript 安全整数范围（2^53-1）。请始终以**字符串**方式接收 / 传递这类 ID（解析 JSON 用 json-bigint 或按文本取值），勿让其经过 JS `Number`。Swagger UI 文档页对超大整数会末位舍入显示，属正常现象，不影响接口实际返回的数据。\n### 参数:\n- url: 公众号文章链接（`https://mp.weixin.qq.com/s/…` 或带 `__biz` 的长链）。示例 `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`\n- raw: 可选，默认 True。True=原始响应；False=精简投影。\n### 返回:\n- 文章详情（正文 / 标题 / 作者 / 封面 / 发布时间 / 合集信息）\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简投影）:\n- `data` 顶层仅 4 个字段，文章正文聚合在 `content`:\n    - `$.data.url`: 文章 URL\n    - `$.data.bizUin`: 公众号 bizUin（int）\n    - `$.data.itemIdx`: 图文位置序号\n    - `$.data.content`: 已解析的正文对象，常用路径:\n        - `$.data.content.title`: 标题\n        - `$.data.content.nick_name` / `$.data.content.user_name`: 公众号名 / gh_username\n        - `$.data.content.author`: 作者\n        - `$.data.content.desc`: 摘要\n        - `$.data.content.create_time`: 发布时间（`\"2025-03-05 12:22\"` 文本）\n        - `$.data.content.ori_create_time`: 发布时间戳（int 秒）\n        - `$.data.content.cdn_url`: 封面图\n        - `$.data.content.comment_id`: 评论 id（喂评论接口的内部 id）\n        - `$.data.content.appmsgalbuminfo`: 所属合集（`album_id` / `title` / 上下篇链接）\n        - `$.data.content.content_text`: 正文 HTML 转出的纯文字\n#### `raw=true`（原始）:\n- `data` 为完整 item（含 `raw=false` 的全部字段，外加模板 / 缓存 / 时间等元信息）:\n    - `$.data.url` / `$.data.bizUin` / `$.data.itemIdx`: 同精简模式\n    - `$.data.msgId`: 图文消息 id\n    - `$.data.lastModifyTime`: 最后修改时间戳\n    - `$.data.tmplVersion` / `$.data.tmplVersions[]`: H5 模板版本\n    - `$.data.clientCacheTime`: 客户端缓存秒数\n    - `$.data.content.*`: 与 `raw=false` 的 `content` 同结构（同样含 `content_text`）\n\n# [English]\n### Purpose:\n- Pass an article URL to get the article body / title / author / cover / publish time / album info.\n- Regardless of `raw`, the nested `content` JSON string is always parsed into an object (structure normalized); `raw` only controls the projection scope of outer fields.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n- ⚠️ Large-integer ID precision: IDs such as `comment_id` / `msgId` in the response are 64-bit big integers beyond JavaScript's safe-integer range (2^53-1). Always receive / pass such IDs as **strings** (parse JSON with json-bigint or read them as text), never through JS `Number`. Swagger UI rounds the trailing digits of huge integers in its docs view — this is expected and does not affect the actual data returned by the API.\n### Parameters:\n- url: WeChat MP article URL (`https://mp.weixin.qq.com/s/…` or long URL with `__biz`). E.g. `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`\n- raw: Optional, default True. True=raw response; False=simplified projection.\n### Return:\n- Article detail (body / title / author / cover / publish time / album info)\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified projection):\n- `data` has only 4 top-level fields; the article body is aggregated in `content`:\n    - `$.data.url`: article URL\n    - `$.data.bizUin`: official account bizUin (int)\n    - `$.data.itemIdx`: article position index\n    - `$.data.content`: parsed body object, common paths:\n        - `$.data.content.title`: title\n        - `$.data.content.nick_name` / `$.data.content.user_name`: account name / gh_username\n        - `$.data.content.author`: author\n        - `$.data.content.desc`: digest\n        - `$.data.content.create_time`: publish time (text like `\"2025-03-05 12:22\"`)\n        - `$.data.content.ori_create_time`: publish timestamp (int seconds)\n        - `$.data.content.cdn_url`: cover image\n        - `$.data.content.comment_id`: comment id (internal id fed into comment endpoints)\n        - `$.data.content.appmsgalbuminfo`: album info (`album_id` / `title` / prev & next links)\n        - `$.data.content.content_text`: plain text extracted from the body HTML\n#### `raw=true` (raw):\n- `data` is the full item (all fields of `raw=false`, plus template / cache / time metadata):\n    - `$.data.url` / `$.data.bizUin` / `$.data.itemIdx`: same as simplified mode\n    - `$.data.msgId`: message id\n    - `$.data.lastModifyTime`: last modified timestamp\n    - `$.data.tmplVersion` / `$.data.tmplVersions[]`: H5 template versions\n    - `$.data.clientCacheTime`: client cache seconds\n    - `$.data.content.*`: same structure as `content` of `raw=false` (also includes `content_text`)",
+    "operationId": "fetch_article_detail_api_v1_wechat_mp_v2_fetch_article_detail_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleDetailRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_article_detail_h5": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章详情（H5 版本，推荐）/Get WeChat MP Article Detail (H5, Recommended)",
+    "description": "# [中文]\n### 用途:\n- 传文章 URL，返回文章正文 / 标题 / 作者 / 封面 / 发布时间 / 合集信息等，**推荐默认使用本接口**。\n- 与 `/fetch_article_detail` 是**两个独立接口**，各自返回结果，不会自动切换：\n\n    | 接口 | 特点 | 建议 |\n    |---|---|---|\n    | `/fetch_article_detail` | 响应快、字段较少；稳定性不如本接口 | 对速度敏感时用 |\n    | `/fetch_article_detail_h5`（本接口） | 正文稳定、**字段最全** | **默认推荐** |\n\n- 返回结构与 `/fetch_article_detail` 对齐（`data` 为 `{url, bizUin, itemIdx, content}`），\n  按 `content` 取值的调用方**无需改代码**即可切换。\n- 价格：0.01$/次\n- ⏱️ 本接口需拉取并解析文章页面，响应比原生版本慢，请将客户端超时（timeout）设置为 30 秒。\n- ⚠️ 大整数 ID 精度：`comment_id` / `mid` 等为 64 位大整数，超出 JavaScript 安全整数范围（2^53-1）。\n  请始终以**字符串**方式接收 / 传递（解析 JSON 用 json-bigint），勿让其经过 JS `Number`。\n- 阅读量与评论列表**两个详情接口都不返回**：互动数据用 `/fetch_article_stats` 或\n  `/fetch_article_stats_h5`，评论用 `/fetch_article_comments`。\n### 参数:\n- url: 公众号文章链接（`https://mp.weixin.qq.com/s/…` 或带 `__biz` 的长链）。\n- raw: 可选，默认 True。True=附带更多元字段（头像 / 版权 / 页面体积）；False=仅核心字段。\n  **两者顶层结构一致**，raw 只增减 `content` 内字段。\n### 返回:\n- 文章详情（正文 / 标题 / 作者 / 封面 / 发布时间 / 合集 / 标签 / IP 属地 / 图片清单等）\n\n### 响应结构与 JSON Path:\n#### `raw=false`（核心字段）:\n- `data` 顶层 4 个字段，正文与元信息聚合在 `content`:\n    - `$.data.url`: 文章 URL\n    - `$.data.bizUin`: 公众号 bizUin（int，由 `__biz` 解码）\n    - `$.data.itemIdx`: 图文位置序号（int）\n    - `$.data.content`: 解析出的文章对象，常用路径:\n        - `$.data.content.title`: 标题\n        - `$.data.content.nick_name` / `$.data.content.user_name`: 公众号名 / gh_username 或 wxid\n        - `$.data.content.author`: 作者\n        - `$.data.content.desc`: 摘要\n        - `$.data.content.create_time`: 发布时间（`\"2026-05-24 11:35\"` 文本）\n        - `$.data.content.create_timestamp` / `$.data.content.ori_create_time`: 发布时间戳（int 秒）\n        - `$.data.content.cdn_url`: 封面图\n        - `$.data.content.mid` / `$.data.content.idx` / `$.data.content.sn`: 图文 id / 位置 / 校验串\n        - `$.data.content.comment_id`: 评论 id（喂评论接口的内部 id；沉浸 / 图片页可能为空）\n        - `$.data.content.source_url`: 原文链接（无则空串）\n        - `$.data.content.link`: 文章长链\n        - `$.data.content.content_noencode`: 正文 HTML（`_content_type=article` 时有，其它形态为空）\n        - `$.data.content.content_text`: 正文纯文字\n        - `$.data.content._content_type`: 文章形态（`article` 经典图文 / `immersive` 沉浸图片页 /\n          `video` 视频页 / `unknown` 未识别形态，正文即摘要）\n#### `raw=true`（附带更多元字段）:\n- `data` 顶层同 `raw=false`；`content` 在上表基础上再加:\n    - `$.data.content.round_head_img` / `$.data.content.hd_head_img`: 公众号头像（普通 / 高清）\n    - `$.data.content.copyright_stat`: 原创声明状态\n    - `$.data.content.html_size`: 拉取到的文章 HTML 字符数（`len` 长度，非字节）\n\n# [English]\n### Purpose:\n- Fetch WeChat MP article detail via the H5 channel. **Recommended by default**: the body is\n  more reliable and the field coverage is the widest.\n- Independent from `/fetch_article_detail`; neither falls back to the other.\n- Price: 0.01$/request\n### Parameters:\n- url: WeChat MP article URL.\n- raw: Optional, default True. True = extra meta fields; False = core fields only.\n  Top-level shape is identical either way.\n### Returns:\n- Article detail (title / author / cover / publish time / album / tags / images ...)",
+    "operationId": "fetch_article_detail_h5_api_v1_wechat_mp_v2_fetch_article_detail_h5_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleDetailRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_article_stats_h5": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章互动数据（H5 版本）/Get WeChat MP Article Stats (H5)",
+    "description": "# [中文]\n### 用途:\n- 传文章 URL，返回**评论数 / 精选评论数**。与 `/fetch_article_stats` 是**两个独立接口**，\n  各自返回结果，不会自动切换：\n\n    | 接口 | 能取到 | 建议 |\n    |---|---|---|\n    | `/fetch_article_stats` | 阅读量 / 点赞 / 在看 / 分享 / 收藏 / 评论数（**全部指标**） | 需要阅读量等指标时用 |\n    | `/fetch_article_stats_h5`（本接口） | **仅评论数 / 精选评论数**；稳定性更好 | 只要评论数、或上面那条报错时用 |\n\n- ⚠️ 阅读量、点赞、在看、分享、收藏这几项**本接口取不到**，一律返回 `null` 并列在\n  `$.data.unavailable[]`，**不会用 `0` 冒充** —— 调用方可据此区分「这篇文章真的是 0」\n  和「这条路取不到」。需要这些指标请用 `/fetch_article_stats`。\n- 价格：0.01$/次\n- ⏱️ 请将客户端超时（timeout）设置为 30 秒。\n- ⚠️ 大整数 ID 精度：`comment_id` / `appmsgid` 为 64 位大整数，请以**字符串**方式接收 / 传递。\n- 💡 **提速**：传 `comment_id` 可让上游跳过整篇文章的抓取解析，实测本接口从 15.10s 降到 6.91s / 评论接口从 8.28s 降到 6.13s。该值取自 `/fetch_article_detail` 或 `/fetch_article_detail_h5` 响应的 `$.data.content.comment_id`，拿它是零成本的。\n### 参数:\n- url: 公众号文章链接（`https://mp.weixin.qq.com/s/…`）。\n- raw: 可选，默认 True。True=附带评论接口的原始计数字段；False=仅计数。\n  **两者顶层结构一致**，raw 只增减字段。\n### 返回:\n- 评论数 / 精选评论数；其余互动指标为 `null` 并列在 `unavailable[]`\n\n### 响应结构与 JSON Path:\n#### `raw=false`（计数）:\n- `$.data.comment_count`: 评论总数\n- `$.data.elected_comment_count`: 精选评论数\n- `$.data.read_num` / `$.data.like_count` / `$.data.old_like_count` /\n  `$.data.share_count` / `$.data.collect_count` / `$.data.star_num`: 本接口恒为 `null`\n- `$.data.unavailable[]`: 本接口取不到的字段名清单（与上一行对应）\n#### `raw=true`（附带原始计数字段）:\n- `data` 顶层同 `raw=false`，另加:\n    - `$.data.comment_raw.total_count` / `$.data.comment_raw.elected_total`: 评论接口给的原始计数\n    - `$.data.comment_raw.comment_id` / `$.data.comment_raw.appmsgid`: 文章的评论 id / 图文 id\n\n# [English]\n### Purpose:\n- Fetch comment counts for a WeChat MP article via the H5 channel.\n- Read count / likes / shares / favorites are **not available** here: they are returned as\n  `null` and listed in `$.data.unavailable[]` (never faked as `0`). Use\n  `/fetch_article_stats` when you need them.\n- Price: 0.01$/request\n### Parameters:\n- url: WeChat MP article URL.\n- raw: Optional, default True. True = include raw counter fields; False = counts only.\n### Returns:\n- comment_count / elected_comment_count; other metrics are null and listed in unavailable[]",
+    "operationId": "fetch_article_stats_h5_api_v1_wechat_mp_v2_fetch_article_stats_h5_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleStatsH5Request"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_article_stats": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章互动数据/Get WeChat MP Article Stats",
+    "description": "# [中文]\n### 用途:\n- 传文章 URL，返回文章的互动指标（阅读量 / 点赞 / 在看 / 分享 / 收藏 / 评论数）。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n### 参数:\n- url: 公众号文章链接（`https://mp.weixin.qq.com/s/…`）。示例 `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`\n- raw: 可选，默认 True。True=完整原始统计对象（含 `show_*` 显隐标志位）；False=仅精简计数。\n### 返回:\n- 文章互动数据\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简计数）:\n- `data` 为 7 个计数字段:\n    - `$.data.read_num`: 阅读量\n    - `$.data.like_count`: 点赞数\n    - `$.data.old_like_count`: 在看数（旧「在看」）\n    - `$.data.share_count`: 分享数\n    - `$.data.collect_count`: 收藏数\n    - `$.data.comment_count`: 评论数\n    - `$.data.star_num`: 星标 / 喜欢数\n#### `raw=true`（原始）:\n- `data` 为完整原始统计对象：含 `raw=false` 的全部计数（同名同义），外加显隐 / 状态标志位:\n    - 计数: `$.data.read_num` / `$.data.like_count` / `$.data.old_like_count` / `$.data.share_count` / `$.data.collect_count` / `$.data.comment_count` / `$.data.star_num`\n    - 显隐标志: `$.data.show_like` / `$.data.show_old_like` / `$.data.show_share` / `$.data.show_collect` / `$.data.show_read` / `$.data.show_star`（及对应 `*_gray` 置灰位）\n    - 状态: `$.data.comment_enabled`（评论开关）/ `$.data.get_data_succ`（取数成功）/ `$.data.is_subscribed` / `$.data.verify_status` / `$.data.can_use_star`\n\n# [English]\n### Purpose:\n- Pass an article URL to get its interaction metrics (reads / likes / \"wow\" / shares / favorites / comments).\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n### Parameters:\n- url: WeChat MP article URL (`https://mp.weixin.qq.com/s/…`). E.g. `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`\n- raw: Optional, default True. True=full raw stats object (with `show_*` visibility flags); False=simplified counts only.\n### Return:\n- Article interaction stats\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified counts):\n- `data` contains 7 count fields:\n    - `$.data.read_num`: read count\n    - `$.data.like_count`: like count\n    - `$.data.old_like_count`: \"wow\" count (old \"Looking\")\n    - `$.data.share_count`: share count\n    - `$.data.collect_count`: favorite count\n    - `$.data.comment_count`: comment count\n    - `$.data.star_num`: star / like count\n#### `raw=true` (raw):\n- `data` is the full raw stats object: all counts of `raw=false` (same names and meanings), plus visibility / status flags:\n    - Counts: `$.data.read_num` / `$.data.like_count` / `$.data.old_like_count` / `$.data.share_count` / `$.data.collect_count` / `$.data.comment_count` / `$.data.star_num`\n    - Visibility flags: `$.data.show_like` / `$.data.show_old_like` / `$.data.show_share` / `$.data.show_collect` / `$.data.show_read` / `$.data.show_star` (and corresponding `*_gray` flags)\n    - Status: `$.data.comment_enabled` (comment switch) / `$.data.get_data_succ` (fetch success) / `$.data.is_subscribed` / `$.data.verify_status` / `$.data.can_use_star`",
+    "operationId": "fetch_article_stats_api_v1_wechat_mp_v2_fetch_article_stats_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleDetailRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_article_comments": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章评论/Get WeChat MP Article Comments",
+    "description": "# [中文]\n### 用途:\n- 获取公众号文章评论（单页，`buffer` 游标翻页），返回文章的一页精选评论。\n- **翻页**：首页 `buffer` 留空 → 取响应的 `buffer` → 下次请求传回 `buffer` 取下一页；`has_more` 为 false 即到末页。\n- 逐条评论的二级回复请用 `fetch_comment_replies`（传评论的 `content_id`）。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n- ⚠️ 大整数 ID 精度：响应中的 `content_id` 等为 64 位大整数，超出 JavaScript 安全整数范围（2^53-1）。请始终以**字符串**方式接收 / 传递这类 ID（解析 JSON 用 json-bigint 或按文本取值），勿让其经过 JS `Number`。Swagger UI 文档页对超大整数会末位舍入显示，属正常现象，不影响接口实际返回的数据。\n- 💡 **提速**：传 `comment_id` 可让上游跳过整篇文章的抓取解析，实测本接口从 15.10s 降到 6.91s / 评论接口从 8.28s 降到 6.13s。该值取自 `/fetch_article_detail` 或 `/fetch_article_detail_h5` 响应的 `$.data.content.comment_id`，拿它是零成本的。\n### 参数:\n- url: 公众号文章链接（`https://mp.weixin.qq.com/s/…`）。示例 `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`\n- buffer: 可选，默认空。翻页游标，首页留空；翻页传上一页响应的 `buffer`。\n- raw: 可选，默认 True。True=完整原始评论对象；False=精简评论视图。\n### 返回:\n- 单页评论列表及翻页游标\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简视图）:\n- `data` 外层为本页汇总，`comments[]` 为精简评论:\n    - `$.data.appmsgid`: 图文消息 id\n    - `$.data.elected_total`: 精选评论总数\n    - `$.data.total_count`: 评论总数\n    - `$.data.buffer`: 下一页游标（翻页回传 `buffer`；末页为空串）\n    - `$.data.has_more`: 是否还有下一页\n    - `$.data.comment_id`: 文章评论标识（内部用）\n    - `$.data.comments[N].content_id`: 评论 id（**喂 `fetch_comment_replies` 的 `content_id`**）\n    - `$.data.comments[N].nick_name`: 评论者昵称\n    - `$.data.comments[N].content`: 评论内容\n    - `$.data.comments[N].like_num`: 点赞数\n    - `$.data.comments[N].create_time`: 评论时间戳\n    - `$.data.comments[N].ip_wording`: IP 归属地（`province_name` / `city_name` 等）\n    - `$.data.comments[N].is_elected` / `is_top`: 是否精选 / 置顶\n    - `$.data.comments[N].reply_total`: 二级回复总数\n    - `$.data.comments[N].replies[]`: 二级回复预览（精简，见 `fetch_comment_replies`）\n#### `raw=true`（原始）:\n- `data` 外层同上（`appmsgid` / `elected_total` / `total_count` / `buffer` / `has_more` / `comment_id`），`comments[]` 为完整原始评论对象，字段更全（snake_case）:\n    - `$.data.comments[N].content_id`: 评论 id（同精简模式，仍是喂 `fetch_comment_replies` 的值）\n    - `$.data.comments[N].content` / `nick_name` / `like_num` / `create_time` / `ip_wording` / `is_elected` / `is_top`: 与 `raw=false` 同名同义\n    - 原始模式额外字段: `$.data.comments[N].id`（楼层序号）/ `openid` / `identity_type` / `logo_url`（头像）/ `like_status` / `is_from_me` / `$.data.comments[N].reply_new`（含 `reply_total_cnt` / `reply_list`，对应精简模式的 `reply_total` / `replies`）\n\n# [English]\n### Purpose:\n- Get WeChat MP article comments (single page, `buffer` cursor pagination); returns one page of featured comments.\n- **Pagination**: leave `buffer` empty for the first page → take `buffer` from the response → pass it back in the next request; `has_more` false means the last page.\n- For second-level replies of a specific comment, use `fetch_comment_replies` (pass the comment's `content_id`).\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n- ⚠️ Large-integer ID precision: IDs such as `content_id` in the response are 64-bit big integers beyond JavaScript's safe-integer range (2^53-1). Always receive / pass such IDs as **strings** (parse JSON with json-bigint or read them as text), never through JS `Number`. Swagger UI rounds the trailing digits of huge integers in its docs view — this is expected and does not affect the actual data returned by the API.\n### Parameters:\n- url: WeChat MP article URL (`https://mp.weixin.qq.com/s/…`). E.g. `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`\n- buffer: Optional, default empty. Pagination cursor; leave empty for the first page, pass `buffer` from the previous response for the next page.\n- raw: Optional, default True. True=full raw comment objects; False=simplified comment view.\n### Return:\n- One page of comments with pagination cursor\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified view):\n- `data` outer level is the page summary; `comments[]` are simplified comments:\n    - `$.data.appmsgid`: message id\n    - `$.data.elected_total`: total featured comments\n    - `$.data.total_count`: total comments\n    - `$.data.buffer`: next-page cursor (pass back as `buffer`; empty string at the last page)\n    - `$.data.has_more`: whether there is a next page\n    - `$.data.comment_id`: article comment identifier (internal)\n    - `$.data.comments[N].content_id`: comment id (**feed into `content_id` of `fetch_comment_replies`**)\n    - `$.data.comments[N].nick_name`: commenter nickname\n    - `$.data.comments[N].content`: comment content\n    - `$.data.comments[N].like_num`: like count\n    - `$.data.comments[N].create_time`: comment timestamp\n    - `$.data.comments[N].ip_wording`: IP region (`province_name` / `city_name` etc.)\n    - `$.data.comments[N].is_elected` / `is_top`: featured / pinned flags\n    - `$.data.comments[N].reply_total`: total second-level replies\n    - `$.data.comments[N].replies[]`: reply preview (simplified, see `fetch_comment_replies`)\n#### `raw=true` (raw):\n- `data` outer level same as above (`appmsgid` / `elected_total` / `total_count` / `buffer` / `has_more` / `comment_id`); `comments[]` are full raw comment objects with more fields (snake_case):\n    - `$.data.comments[N].content_id`: comment id (same as simplified mode, still the value fed into `fetch_comment_replies`)\n    - `$.data.comments[N].content` / `nick_name` / `like_num` / `create_time` / `ip_wording` / `is_elected` / `is_top`: same names and meanings as `raw=false`\n    - Raw-only extra fields: `$.data.comments[N].id` (floor number) / `openid` / `identity_type` / `logo_url` (avatar) / `like_status` / `is_from_me` / `$.data.comments[N].reply_new` (with `reply_total_cnt` / `reply_list`, corresponding to `reply_total` / `replies` of the simplified mode)",
+    "operationId": "fetch_article_comments_api_v1_wechat_mp_v2_fetch_article_comments_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleCommentsRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_comment_replies": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号评论的二级回复/Get WeChat MP Comment Replies",
+    "description": "# [中文]\n### 用途:\n- 返回某条一级评论下的二级回复。\n- 链路：先调 `fetch_article_comments` 取到每条评论的 `content_id`，再把它喂给本接口。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n- ⚠️ 大整数 ID 精度：响应中的 `content_id` / `reply_id` 等为 64 位大整数，超出 JavaScript 安全整数范围（2^53-1）。请始终以**字符串**方式接收 / 传递这类 ID（解析 JSON 用 json-bigint 或按文本取值），勿让其经过 JS `Number`。Swagger UI 文档页对超大整数会末位舍入显示，属正常现象，不影响接口实际返回的数据。\n- 💡 **提速**：传 `comment_id` 可让上游跳过整篇文章的抓取解析，实测本接口从 15.10s 降到 6.91s / 评论接口从 8.28s 降到 6.13s。该值取自 `/fetch_article_detail` 或 `/fetch_article_detail_h5` 响应的 `$.data.content.comment_id`，拿它是零成本的。\n### 参数:\n- url: 公众号文章链接（`https://mp.weixin.qq.com/s/…`）。示例 `http://mp.weixin.qq.com/s?__biz=Mzk3NTA0MzM5NA==&mid=2247483745&idx=1&sn=3f34e768cf457a501038991ed30be1f4#rd`\n- content_id: 可选（纯数字）。目标一级评论的 `content_id`，取自 `fetch_article_comments` 响应的 `$.data.comments[N].content_id`；**不传则自动取第一条有回复的评论**。示例 `12109128638545265979`\n- offset: 可选，默认 0（>=0）。回复翻页偏移；首页 0，`has_more=true` 时传上次返回的 `next_offset` 取下一页。\n- ⚠️ 上游已移除 `all_pages` 自动翻页：它一次计费最多打 30 个上游请求，且自动翻页模式**不返回** `has_more` / `next_offset`，调用方无从发现结果被截断（实测 400 条回复只给回前 300）。翻页统一用 `offset` / `next_offset` 驱动，与 `/fetch_article_comments` 的游标契约一致。\n- raw: 可选，默认 True。True=完整原始回复对象；False=精简回复。\n### 返回:\n- 二级回复列表及翻页信息\n\n> 注意：本接口 `raw=true` 与 `raw=false` 的**外层结构一致**，差异仅在 `replies[]` 每个元素的字段粒度（精简视图 vs 完整原始对象）。\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简回复）:\n- `$.data.content_id`: 目标评论 id（回显）\n- `$.data.parent_nick`: 父评论（被回复者）昵称\n- `$.data.reply_total`: 二级回复总数\n- `$.data.count`: 本次返回的回复条数\n- `$.data.replies[N].reply_id`: 回复 id\n- `$.data.replies[N].nick_name`: 回复者昵称\n- `$.data.replies[N].content`: 回复内容\n- `$.data.replies[N].create_time`: 回复时间戳\n- `$.data.replies[N].ip_wording`: IP 归属地\n- `$.data.replies[N].identity_name`: 身份标识\n- `$.data.replies[N].from_ai` / `reply_is_elected`: 是否 AI 回复 / 是否精选\n- 翻页字段: `$.data.offset` / `$.data.next_offset` / `$.data.has_more`\n#### `raw=true`（原始）:\n- 外层 `content_id` / `parent_nick` / `reply_total` / `count`（及单页模式的 `offset` / `next_offset` / `has_more`）与 `raw=false` **完全一致**；差异仅在 `replies[]` 元素为完整原始回复对象（含 `raw=false` 投影掉的字段）。常用路径仍为 `$.data.replies[N].content` / `$.data.replies[N].reply_id` / `$.data.replies[N].nick_name`。\n\n# [English]\n### Purpose:\n- Get the second-level replies under a first-level comment.\n- Chain: first call `fetch_article_comments` to get each comment's `content_id`, then feed it into this endpoint.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n- ⚠️ Large-integer ID precision: IDs such as `content_id` / `reply_id` in the response are 64-bit big integers beyond JavaScript's safe-integer range (2^53-1). Always receive / pass such IDs as **strings** (parse JSON with json-bigint or read them as text), never through JS `Number`. Swagger UI rounds the trailing digits of huge integers in its docs view — this is expected and does not affect the actual data returned by the API.\n### Parameters:\n- url: WeChat MP article URL (`https://mp.weixin.qq.com/s/…`). E.g. `http://mp.weixin.qq.com/s?__biz=Mzk3NTA0MzM5NA==&mid=2247483745&idx=1&sn=3f34e768cf457a501038991ed30be1f4#rd`\n- content_id: Optional (numeric). `content_id` of the target first-level comment, from `$.data.comments[N].content_id` of the `fetch_article_comments` response; **defaults to the first comment that has replies when omitted**. E.g. `12109128638545265979`\n- offset: Optional, default 0 (>=0). Reply pagination offset; 0 for the first page, pass `next_offset` from the previous response when `has_more=true`.\n- Note: `all_pages` was removed upstream — it issued up to 30 upstream requests per billed call and omitted `has_more` / `next_offset`, so callers could not tell the result was truncated. Paginate with `offset` / `next_offset` instead.\n- raw: Optional, default True. True=full raw reply objects; False=simplified replies.\n### Return:\n- Second-level reply list with pagination info\n\n> Note: the **outer structure is identical** for `raw=true` and `raw=false`; the difference is only in the field granularity of each `replies[]` element (simplified view vs full raw object).\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified replies):\n- `$.data.content_id`: target comment id (echo)\n- `$.data.parent_nick`: nickname of the parent comment (the one replied to)\n- `$.data.reply_total`: total second-level replies\n- `$.data.count`: number of replies returned this time\n- `$.data.replies[N].reply_id`: reply id\n- `$.data.replies[N].nick_name`: replier nickname\n- `$.data.replies[N].content`: reply content\n- `$.data.replies[N].create_time`: reply timestamp\n- `$.data.replies[N].ip_wording`: IP region\n- `$.data.replies[N].identity_name`: identity label\n- `$.data.replies[N].from_ai` / `reply_is_elected`: AI reply / featured flags\n- Pagination fields: `$.data.offset` / `$.data.next_offset` / `$.data.has_more`\n#### `raw=true` (raw):\n- Outer `content_id` / `parent_nick` / `reply_total` / `count` (and `offset` / `next_offset` / `has_more` in single-page mode) are **identical** to `raw=false`; the only difference is that `replies[]` elements are full raw reply objects (including fields projected away in `raw=false`). Common paths remain `$.data.replies[N].content` / `$.data.replies[N].reply_id` / `$.data.replies[N].nick_name`.",
+    "operationId": "fetch_comment_replies_api_v1_wechat_mp_v2_fetch_comment_replies_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchCommentRepliesRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_related_articles": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号关联文章/Get WeChat MP Related Articles",
+    "description": "# [中文]\n### 用途:\n- 传文章 URL，返回文章底部「关联 / 相关文章」。未开启该功能的文章返回空列表。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n### 参数:\n- url: 公众号文章链接（长 / 短链均可）。示例 `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`（该文未开启关联文章，返回空）\n- raw: 可选，默认 True。True=完整原始响应；False=精简投影。\n### 返回:\n- 关联文章列表\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简投影）:\n- `data` 为拍平后的三字段:\n    - `$.data.ret`: 返回码（0 正常）\n    - `$.data.count`: 关联文章条数\n    - `$.data.articles[]`: 关联文章列表（命中任一来源列表的合并；空文章为 `[]`）\n#### `raw=true`（原始）:\n- `data` 为完整原始响应:\n    - `$.data.article_size`: 关联文章数量（对应精简模式 `count`）\n    - `$.data.list[]`: 关联文章原始列表（对应精简模式 `articles`）\n    - `$.data.base_resp.ret`: 返回码（对应精简模式 `ret`）；`base_resp.exportkey_token`: 导出 token\n    - `$.data.empty_scene`: 空结果场景码；`$.data.show_rec_reason`: 是否展示推荐理由；`$.data.report_info`: 上报信息（JSON 串）\n\n# [English]\n### Purpose:\n- Pass an article URL to get the \"related articles\" at the bottom of the article. Articles without this feature return an empty list.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n### Parameters:\n- url: WeChat MP article URL (long or short form). E.g. `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw` (this article has related articles disabled, returns empty)\n- raw: Optional, default True. True=full raw response; False=simplified projection.\n### Return:\n- Related article list\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified projection):\n- `data` is flattened into three fields:\n    - `$.data.ret`: return code (0 = OK)\n    - `$.data.count`: number of related articles\n    - `$.data.articles[]`: related article list (merged from whichever source list hits; `[]` when empty)\n#### `raw=true` (raw):\n- `data` is the full raw response:\n    - `$.data.article_size`: number of related articles (corresponds to `count` in simplified mode)\n    - `$.data.list[]`: raw related article list (corresponds to `articles` in simplified mode)\n    - `$.data.base_resp.ret`: return code (corresponds to `ret` in simplified mode); `base_resp.exportkey_token`: export token\n    - `$.data.empty_scene`: empty-result scene code; `$.data.show_rec_reason`: whether to show recommendation reason; `$.data.report_info`: report info (JSON string)",
+    "operationId": "fetch_related_articles_api_v1_wechat_mp_v2_fetch_related_articles_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleDetailRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_article_ad": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章广告/Get WeChat MP Article Ads",
+    "description": "# [中文]\n### 用途:\n- 传文章 URL，返回文章内嵌的广告位信息。该接口响应相对较慢，请耐心等待；未投放广告的文章返回空。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n### 参数:\n- url: 公众号文章链接。示例 `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw`（该文无广告，返回空）\n- raw: 可选，默认 True。True=完整原始响应；False=拍平后的广告列表。\n### 返回:\n- 文章广告位信息\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简投影）:\n- `data` 为拍平后的广告列表:\n    - `$.data.count`: 广告条数（合并 `advertisement_info` 与 `ad_slot_data`）\n    - `$.data.ads[]`: 广告项列表（无广告时为 `[]`）\n#### `raw=true`（原始）:\n- `data` 按抓到的响应聚合:\n    - `$.data.pages`: 响应页数\n    - `$.data.results[]`: 每页完整原始响应（广告原始字段在各页的 `advertisement_info` / `ad_slot_data` 内，即精简模式 `ads` 的来源）\n\n# [English]\n### Purpose:\n- Pass an article URL to get the embedded ad slot info of the article. This endpoint responds relatively slowly, please be patient; articles without ads return empty.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n### Parameters:\n- url: WeChat MP article URL. E.g. `https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw` (this article has no ads, returns empty)\n- raw: Optional, default True. True=full raw response; False=flattened ad list.\n### Return:\n- Article ad slot info\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified projection):\n- `data` is the flattened ad list:\n    - `$.data.count`: number of ads (merged from `advertisement_info` and `ad_slot_data`)\n    - `$.data.ads[]`: ad item list (`[]` when no ads)\n#### `raw=true` (raw):\n- `data` is aggregated by the responses captured:\n    - `$.data.pages`: number of response pages\n    - `$.data.results[]`: full raw response per page (raw ad fields are inside `advertisement_info` / `ad_slot_data` of each page — the source of `ads` in simplified mode)",
+    "operationId": "fetch_article_ad_api_v1_wechat_mp_v2_fetch_article_ad_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchArticleDetailRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_account_profile": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号资料页/Get WeChat MP Account Profile",
+    "description": "# [中文]\n### 用途:\n- 传公众号 username，返回公众号资料页：昵称 / IP 属地 / 原创文章数 / 认证主体类型 / 关联视频号等。\n- ⚠️ **签名（简介）与头像这条路取不到** —— 微信的资料页响应里既没有可读简介也没有头像。\n  它们恒为 `null` 并列在 `$.data.unavailable[]` 里，**不会用空串冒充**，调用方可据此区分\n  「这个号真的没填」和「这条路取不到」。\n- 💡 **头像请改用 `/fetch_article_detail_h5`**（传该号的任意一篇文章链接，`raw=true`）：\n  `$.data.content.round_head_img`（普通）/ `$.data.content.hd_head_img`（高清）。\n  那条路确实有值，已实测。简介目前没有任何接口能取到。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n### 参数:\n- username: 公众号 username。**三种形态都支持**：`gh_…`、`gh_…@app`（关联小程序的账号）、自定义微信号（如 `nikejdi`）。来源：文章详情 `content.user_name`、或微信搜索 V2 `fetch_search`（business_type=account）结果的 `jumpInfo.userName`。示例 `gh_363b924965e9`\n- raw: 可选，默认 True。True=原始；False=精简解析。\n### 返回:\n- 公众号资料页信息\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简解析，snake_case）:\n- 公众号 username: `$.data.user_name`\n- 昵称: `$.data.nick_name`（如 `量子位` / `NIKE`）\n- 用户角色: `$.data.user_role`\n- 服务类型（订阅号 / 服务号代码）: `$.data.service_type`\n- 封禁类型（0=正常）: `$.data.ban_type`\n- IP 属地: `$.data.ip_wording`（如 `北京 海淀`）\n- 原创文章数: `$.data.original_article_count` / `$.data.original_content_str`\n- 关联视频号: `$.data.finder_nickname` / `$.data.finder_username`\n  （后者可直接喂视频号系列接口）\n- 取不到的字段清单: `$.data.unavailable[]`（当前恒含 `signature` / `head_url`）\n- 签名 / 简介: `$.data.signature` —— **恒为 null**，见上方说明\n- 头像: `$.data.head_url` —— **恒为 null**；改用 `/fetch_article_detail_h5` 的\n  `$.data.content.round_head_img` / `hd_head_img`\n#### `raw=true`（原始，本接口默认）:\n- `data` 为完整原始响应（几十个顶层字段），精简版字段对应其中嵌套位置:\n    - 基础信息块: `$.data.baseInfo`（原创文章数 / 订阅状态等；**不含**昵称 / 头像 / 简介）\n    - 昵称原始来源: `$.data.nameCard.buffer`（protobuf，精简层已解出 `nick_name`）\n    - 账号信息: `$.data.accountInfo`（含 `userName` 等）\n    - 统计信息: `$.data.statInfo`\n    - 关联视频号: `$.data.videoFinderInfo`\n    - 服务信息（自定义菜单原始来源）: `$.data.serviceInfo`\n    - 文章 Tab / 消息列表: `$.data.articleTab` / `$.data.msgList`\n    - IP 属地: `$.data.ipwording`\n    - 其余: `liveInfo` / `nameCard` / `gender` / `setting` / `funcFlag` 等\n\n# [English]\n### Purpose:\n- Pass an account username to get the profile: nickname / IP region / original article count / verification entity type / linked Channels account, etc.\n- NOTE: **signature and avatar are not obtainable through this path** — WeChat's profile response carries neither. They are always `null` and listed in `$.data.unavailable[]` (never faked as empty strings).\n- For the **avatar**, use `/fetch_article_detail_h5` instead (pass any article URL of that account with `raw=true`): `$.data.content.round_head_img` / `$.data.content.hd_head_img`. No endpoint currently exposes the signature.\n- Some accounts (like the example) have sparse fields; `nick_name` / `signature` / `head_url` may be `null`.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n### Parameters:\n- username: Official account `gh_username` (`gh_…`). Sources: `content.user_name` from article detail, or `jumpInfo.userName` from WeChat Search V2 `fetch_search` (business_type=account) results. E.g. `gh_363b924965e9`\n- raw: Optional, default True. True=raw; False=simplified parsing.\n### Return:\n- Official account profile info\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified, snake_case):\n- Account username (`gh_…`): `$.data.user_name`\n- Nickname (may be null): `$.data.nick_name`\n- User role: `$.data.user_role`\n- Service type (subscription / service account code): `$.data.service_type`\n- Signature / description (may be null): `$.data.signature`\n- Avatar (may be null): `$.data.head_url`\n- Ban type (0=normal): `$.data.ban_type`\n#### `raw=true` (raw, default for this endpoint):\n- `data` is the full raw response (dozens of top-level fields); simplified fields map to nested locations:\n    - Base info block: `$.data.baseInfo` (raw source of nickname / avatar / description)\n    - Account info: `$.data.accountInfo` (with `userName` etc.)\n    - Stats info: `$.data.statInfo`\n    - Linked Channels account: `$.data.videoFinderInfo`\n    - Service info (raw source of custom menu): `$.data.serviceInfo`\n    - Article tab / message list: `$.data.articleTab` / `$.data.msgList`\n    - IP region: `$.data.ipwording`\n    - Others: `liveInfo` / `nameCard` / `gender` / `setting` / `funcFlag` etc.",
+    "operationId": "fetch_account_profile_api_v1_wechat_mp_v2_fetch_account_profile_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchAccountRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_account_articles": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号文章列表/Get WeChat MP Account Articles",
+    "description": "# [中文]\n### 用途:\n- 传 `gh_username`，返回公众号历史发文（**文章** tab）的**单页**列表。\n- **手动翻页**：首页 `offset` 留空 → 从响应取 `next_offset`（base64 游标）→ 下次请求放进 **`offset`** 取下一页；`is_end` 为真即末页。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n### 参数:\n- username: 公众号 `gh_username`（`gh_…`）。示例 `gh_363b924965e9`\n- page_size: 可选，默认 20。⚠️ 微信当前**忽略**该参数 —— 返回条数由公众号自身决定，实测取 1 与取 40 结果完全相同。翻页请用 `offset` / 响应里的 `next_offset`。\n- offset: 可选，翻页游标（base64），**首页留空**；翻页时传上一页响应的 `next_offset`。示例 `CAMQChiS5KfRBiAKOJLkp9EGQABIAVgAYABwAQ==`\n- item_show_type: 可选，内容栏目（对应公众号主页的「文章 / 视频 / 音频」分栏）。留空 / `0`=文章（默认）、`5`=视频、`7`=音频、`8`=贴图。默认不传=文章，行为不变。\n- raw: 可选，默认 True。True=原始；False=精简解析。\n### 返回:\n- 公众号文章列表（单页）及翻页游标\n\n> 提示：`offset` 是 base64 游标（含 `+/=`），统一走 POST body。本接口**只取单页、不自动翻页**。\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简解析，snake_case）:\n- 公众号 username: `$.data.biz_username`\n- 是否末页（0/1）: `$.data.is_end`\n- 本页返回文章数: `$.data.count`\n- 下一页游标（翻页回传 `offset`；末页为 null）: `$.data.next_offset`\n- 文章列表: `$.data.articles[]`\n- 单篇（N 为下标）:\n    - 文章 appmsgid: `$.data.articles[N].app_msg_id`\n    - 标题: `$.data.articles[N].title`\n    - 摘要: `$.data.articles[N].digest`\n    - 链接: `$.data.articles[N].url`\n    - 封面: `$.data.articles[N].cover`（多比例 `$.data.articles[N].covers`）\n    - 发布 / 更新时间戳: `$.data.articles[N].create_time` / `.update_time`\n    - 群发内位置 / 类型: `$.data.articles[N].idx` / `.msg_type` / `.item_show_type`\n    - 图文数 / 付费标志: `$.data.articles[N].pic_count` / `.is_paid` / `.is_pay_subscribe`\n#### `raw=true`（原始，本接口默认）:\n- `data` 顶层字段与精简版一致（`biz_username` / `is_end` / `count` / `next_offset`），但 `articles[]` 为完整原始群发条目（camelCase 嵌套）:\n    - 单条: `$.data.articles[N].appMsg`（含 `baseInfo` / `detailInfo`）、`$.data.articles[N].baseInfo`（`msgId` / `msgType` / `dateTime` / `status`）\n    - 图文正文在 `$.data.articles[N].appMsg.detailInfo`（一次群发可含多篇：头条 / 次条）\n    - 翻页同样用顶层 `next_offset` 回传 `offset`。做列表展示建议直接用 `raw=false`，路径更干净。\n\n# [English]\n### Purpose:\n- Pass a `gh_username` to get a **single page** of the account's historical posts (**article** tab).\n- **Manual paging**: leave `offset` empty for the first page → take `next_offset` (base64 cursor) from the response → pass it as **`offset`** in the next request; `is_end` truthy means the last page.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n### Parameters:\n- username: Official account `gh_username` (`gh_…`). E.g. `gh_363b924965e9`\n- page_size: Optional, default 20. NOTE: WeChat currently **ignores** this parameter — the count is decided by the account itself (1 and 40 return identically). Paginate with `offset` / `next_offset`.\n- offset: Optional pagination cursor (base64), **leave empty for the first page**; for the next page pass `next_offset` from the previous response. E.g. `CAMQChiS5KfRBiAKOJLkp9EGQABIAVgAYABwAQ==`\n- item_show_type: Optional content tab (matches the \"Articles / Videos / Audios\" tabs on the account homepage). Empty / `0`=articles (default), `5`=videos, `7`=audios, `8`=image-text posts. Omitting it = articles, behavior unchanged.\n- raw: Optional, default True. True=raw; False=simplified parsing.\n### Return:\n- Single page of articles with pagination cursor\n\n> Tip: `offset` is a base64 cursor (contains `+/=`), hence POST body. This endpoint **fetches a single page only and does not auto-paginate**.\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified, snake_case):\n- Account username: `$.data.biz_username`\n- Is last page (0/1): `$.data.is_end`\n- Articles returned on this page: `$.data.count`\n- Next-page cursor (pass back as `offset`; null at the last page): `$.data.next_offset`\n- Article list: `$.data.articles[]`\n- Single article (N is the index):\n    - Article appmsgid: `$.data.articles[N].app_msg_id`\n    - Title: `$.data.articles[N].title`\n    - Digest: `$.data.articles[N].digest`\n    - URL: `$.data.articles[N].url`\n    - Cover: `$.data.articles[N].cover` (multi-ratio `$.data.articles[N].covers`)\n    - Publish / update timestamps: `$.data.articles[N].create_time` / `.update_time`\n    - Position / type within the batch: `$.data.articles[N].idx` / `.msg_type` / `.item_show_type`\n    - Image count / paid flags: `$.data.articles[N].pic_count` / `.is_paid` / `.is_pay_subscribe`\n#### `raw=true` (raw, default for this endpoint):\n- `data` top-level fields match the simplified version (`biz_username` / `is_end` / `count` / `next_offset`), but `articles[]` are full raw batch entries (nested camelCase):\n    - Per entry: `$.data.articles[N].appMsg` (with `baseInfo` / `detailInfo`), `$.data.articles[N].baseInfo` (`msgId` / `msgType` / `dateTime` / `status`)\n    - Article bodies are in `$.data.articles[N].appMsg.detailInfo` (one batch may contain multiple articles: headline / secondary)\n    - Pagination also uses top-level `next_offset` passed back as `offset`. For list display, prefer `raw=false` for cleaner paths.",
+    "operationId": "fetch_account_articles_api_v1_wechat_mp_v2_fetch_account_articles_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchAccountArticlesRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_mp/v2/fetch_account_services": {
+   "post": {
+    "tags": [
+     "WeChat-Media-Platform-V2-API"
+    ],
+    "summary": "获取公众号服务/自定义菜单/Get WeChat MP Account Services & Custom Menu",
+    "description": "# [中文]\n### 用途:\n- 传 `gh_username`，返回公众号底部的自定义菜单 / 服务入口。未配置自定义菜单的账号返回空菜单。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n### 参数:\n- username: 公众号 `gh_username`（`gh_…`）。示例 `gh_363b924965e9`\n- raw: 可选，默认 True。True=原始；False=精简解析。\n### 返回:\n- 公众号自定义菜单 / 服务入口\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简解析，snake_case）:\n- 公众号 username: `$.data.biz_username`\n- 菜单项列表（无菜单时为 `[]`）: `$.data.menu[]` —— 每项为菜单按钮（名称 / 类型 / 子菜单 / 跳转），无自定义菜单的账号该数组为空。\n#### `raw=true`（原始，本接口默认）:\n- `data` 为完整原始菜单结构。未配置菜单的账号返回空对象 `{}`。\n- 精简版的 `menu[]` 即由此原始结构提取而来。\n\n# [English]\n### Purpose:\n- Pass a `gh_username` to get the custom menu / service entries at the bottom of the official account. Accounts without a custom menu return an empty menu.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n### Parameters:\n- username: Official account `gh_username` (`gh_…`). E.g. `gh_363b924965e9`\n- raw: Optional, default True. True=raw; False=simplified parsing.\n### Return:\n- Custom menu / service entries of the official account\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified, snake_case):\n- Account username: `$.data.biz_username`\n- Menu item list (`[]` when no menu): `$.data.menu[]` — each item is a menu button (name / type / sub-menu / jump); the array is empty for accounts without a custom menu.\n#### `raw=true` (raw, default for this endpoint):\n- `data` is the full raw menu structure. Accounts without a configured menu return an empty object `{}`.\n- The simplified `menu[]` is extracted from this raw structure.",
+    "operationId": "fetch_account_services_api_v1_wechat_mp_v2_fetch_account_services_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchAccountRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_search/v2/fetch_search": {
+   "post": {
+    "tags": [
+     "WeChat-Search-V2-API"
+    ],
+    "summary": "微信综合搜索（搜一搜）/WeChat Universal Search",
+    "description": "# [中文]\n### 用途:\n- 微信「搜一搜」综合搜索，垂类由 `business_type` **字符串键**切换，传关键词即可。\n- **实测可搜**：综合 / 公众号（含服务号、视频号）/ 文章 / 视频号视频 / 表情。\n- ⚠️ 其余垂类（直播 / 朋友圈 / 新闻 / 读书 / 听书 / 图片 / 百科 / 微信指数 / 划线 / 评论 / 贴图 / 小游戏 / AI 搜索）由微信服务端按账号与地区下发，当前实测恒返回空结果（`no_more` 文案非空即为正常空结果，`raw=true` / `raw=false` 都在顶层；`raw=false` 时另有 `count=0` + `items=[]`。仍按一次正常调用计费）。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n- ⚠️ 大整数 ID 精度：响应中的 `docID` / `feedNonceId` 等为 64 位大整数，超出 JavaScript 安全整数范围（2^53-1）。请始终以**字符串**方式接收 / 传递这类 ID（解析 JSON 用 json-bigint 或按文本取值），勿让其经过 JS `Number`。Swagger UI 文档页对超大整数会末位舍入显示，属正常现象，不影响接口实际返回的数据。\n### 参数:\n- keyword: 搜索关键词（去空白后 1-100 字）。示例 `人民日报`\n- business_type: 可选，默认 `all`。垂类字符串键（共 18 个）。**实测有结果**：综合 `all` / 公众号·服务号·视频号 `account` / 文章 `article` / 视频 `video` / 表情 `sticker`。其余键 `underline` / `encyclopedia` / `live_stream` / `comment` / `listen` / `news` / `photos` / `book` / `moments` / `image` / `mini_game` / `weixin_index` / `ai_search` 由服务端按账号与地区下发，当前实测恒空。传列表外的值将直接报错（422）。\n- sort: 可选，默认 `default`。排序（结果页「排序」下拉，综合与各垂类通用）—— 不限(相关性) `default`/0 / 最新(发布时间降序) `latest`/1 / 最热(点赞降序) `hot`/2，字符串键或整数均可，非法值报错（400）。\n- publish_time: 可选，默认 `all`。发布时间（结果页「时间」下拉，通用）—— 不限 `all`/0 / 最近一天 `day`/1 / 最近七天 `week`/2 / 最近半年 `half_year`/3，字符串键或整数均可，非法值报错（400）。\n- offset: 可选，默认 0（>=0）。首页传 `0`；**翻页请用 `cursor`，只传 offset 无效**（每页都回到第一页）。\n- cursor: 可选。翻页游标。首页留空；翻页时把上一页响应里返回的 `cursor` 原样传回（须同时重复上一页的 `sort` / `publish_time`），配合 `continue_flag` 判断是否还有下一页。\n- raw: 可选，默认 True。True=原始搜索响应；False=精简解析。\n\n💡 视频垂类专属的「时长」筛选见 `/fetch_search_videos`（`business_type=video` + `duration`）。\n### 返回:\n- 搜索结果列表（结构随垂类略有差异）\n\n### 典型链路:\n- 💡 **拿视频号详情（媒体下载地址 / decode_key）**：搜索（`video` / `all`）的视频结果项**不直接含**媒体，只给 `exportId`（+ `jumpInfo.extInfo.feedNonceId`）。要下载 / 解密：取 `exportId` → 走视频号 V2 接口 `/api/v1/wechat_channels/v2/fetch_video_detail`（传 `export_id`）拿 `media`（`url` / `url_token` / `decode_key`）和明文 `username`。完整链路与解密说明见该接口文档。\n- 公众号结果项的 `jumpInfo.userName`（`gh_…`）可喂给公众号 V2 接口 `/api/v1/wechat_mp/v2/fetch_account_profile` / `fetch_account_articles`。\n\n### 响应结构与 JSON Path:\n#### `raw=false`（精简解析，snake_case）:\n- 关键词回填: `$.data.keyword`\n- 实际生效的垂类代码（如公众号=33554499）: `$.data.business_type`\n- 结果总数: `$.data.total` —— 响应里所有 box 与 subBox 的 `totalCount` **全扫取最大值**（垂类的 `totalCount` 挂在 `subBoxes` 上；综合搜索没有单一总数，给的是最大的那个 box）。**零结果时为 null**（没有任何正数 totalCount），恒空垂类恒为 null\n- 是否还有下一页: `$.data.continue_flag`\n- 翻页游标（原样回传接口的 `cursor` 参数取下一页）: `$.data.cursor`\n- 服务端 offset（仅供参考，单独传回**无法**翻页）: `$.data.offset`\n- 本页结果数: `$.data.count`\n- 拍平的结果项列表（已把各 box / subBox 的 items 合并）: `$.data.items[]`\n- 服务端下发的垂类 tab 清单（仅综合 `business_type=all` 时有值，其余为 null）: `$.data.categories[]` —— 每项 `.type` / `.word` / `.extra_kvs`，**这是当前账号真正可用垂类的权威来源**。注意 `.type` 是垂类的**整数码**（如 33554499），而本接口的 `business_type` 只收上面那 18 个**字符串键**，整数会被拒（422）—— 需自行按键表映射（如 33554499 → `account`）\n- 零结果时服务端给的文案: `$.data.no_more`（有值 = 微信返回的正常空结果，**不是**调用失败）\n- 单项（N 为下标，字段随垂类不同；以下为 `account` 公众号示例）:\n    - 标题（含 `<em>` 高亮）: `$.data.items[N].title`\n    - 描述: `$.data.items[N].desc`\n    - 文档 id: `$.data.items[N].docID`\n    - 类型名（如「公众号」）: `$.data.items[N].accTypeName`\n    - 跳转信息: `$.data.items[N].jumpInfo`（`.userName` = `gh_…`、`.nickName`、`.signature`）\n    - 视频垂类项另含 `exportId`（+ `jumpInfo.extInfo.feedNonceId`）→ 见上「典型链路」\n#### `raw=true`（原始，本接口默认）:\n- `data` 顶层: `keyword` / `business_type` / `results`（**不**做 items 拍平）/ `total` / `continue_flag` / `offset` / `cursor` / `categories` / `no_more`（`total` / `categories` / `no_more` 两种模式都在顶层，字段集已对齐）\n- 完整结果集: `$.data.results`\n- 结果盒子数组: `$.data.results.data[]`，每个 box 的结果在 `$.data.results.data[M].items[]` 与 `$.data.results.data[M].subBoxes[K].items[]` —— 即 `raw=false` 的 `items[]` 是把这些拍平后的结果。\n- 是否还有下一页: `$.data.continue_flag`（`raw=true` / `raw=false` 均在顶层）\n- 翻页游标: `$.data.cursor` —— 原样回传接口的 `cursor` 参数取下一页；`$.data.offset` 仅为服务端 offset，单独传回**无法**翻页\n- 总数直接读顶层 `$.data.total`（raw 两种模式都有）—— 它是 `$.data.results.data[M].totalCount` 与 `$.data.results.data[M].subBoxes[K].totalCount` **全扫取的最大值**；垂类的数字挂在 `subBoxes` 上，只读顶层 box 的 `totalCount` 会拿到 null\n- 做结果遍历建议直接用 `raw=false`（items 已拍平），路径更干净。\n\n# [English]\n### Purpose:\n- WeChat \"Search\" (搜一搜) universal search; the vertical is switched by the `business_type` **string key** — just pass a keyword.\n- **Verified to return data**: all / official accounts (incl. service accounts and Channels) / articles / Channels videos / stickers.\n- ⚠️ The other verticals (live streams, Moments, news, books, listen, images, encyclopedia, WeChat Index, underline, comments, photos, mini games, AI search) are gated server-side per account & region and currently always come back empty. A non-empty `no_more` is the universal signal (top level in both `raw=true` and `raw=false`); `raw=false` additionally gives `count=0` + `items=[]`. Still billed as a normal call.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n- ⚠️ Large-integer ID precision: IDs such as `docID` / `feedNonceId` in the response are 64-bit big integers beyond JavaScript's safe-integer range (2^53-1). Always receive / pass such IDs as **strings** (parse JSON with json-bigint or read them as text), never through JS `Number`. Swagger UI rounds the trailing digits of huge integers in its docs view — this is expected and does not affect the actual data returned by the API.\n### Parameters:\n- keyword: Search keyword (1-100 chars after trimming). E.g. `人民日报`\n- business_type: Optional, default `all`. Vertical string key (18 total). **Verified to return data**: `all` / `account` / `article` / `video` / `sticker`. The rest (`underline` / `encyclopedia` / `live_stream` / `comment` / `listen` / `news` / `photos` / `book` / `moments` / `image` / `mini_game` / `weixin_index` / `ai_search`) are gated server-side per account & region and currently always come back empty. Any value outside this list is rejected (422).\n- sort: Optional, default `default`. Sort (result page \"sort\" dropdown, common to all verticals) — `default`/0 (relevance) / `latest`/1 (newest) / `hot`/2 (most liked); string key or integer, invalid values rejected (400).\n- publish_time: Optional, default `all`. Publish time (result page \"time\" dropdown, common) — `all`/0 / `day`/1 / `week`/2 / `half_year`/3; string key or integer, invalid values rejected (400).\n- offset: Optional, default 0 (>=0). Pass `0` for the first page; **use `cursor` to paginate — offset alone does not work** (it returns the first page every time).\n- cursor: Optional. Pagination cursor. Leave empty for the first page; for the next page pass back the `cursor` returned in the previous response (repeat the same `sort` / `publish_time`), and use `continue_flag` to check whether there are more pages.\n- raw: Optional, default True. True=raw search response; False=simplified parsing.\n\n💡 The \"duration\" filter specific to the video vertical is available at `/fetch_search_videos` (`business_type=video` + `duration`).\n### Return:\n- Search result list (structure varies slightly by vertical)\n\n### Typical chains:\n- 💡 **To get Channels video detail (media download address / decode_key)**: video result items from search (`video` / `all`) do **not** contain media directly — only `exportId` (+ `jumpInfo.extInfo.feedNonceId`). To download / decrypt: take `exportId` → call the Channels V2 endpoint `/api/v1/wechat_channels/v2/fetch_video_detail` (pass `export_id`) to get `media` (`url` / `url_token` / `decode_key`) and the plain `username`. See that endpoint's docs for the full chain and decryption notes.\n- The `jumpInfo.userName` (`gh_…`) of official account result items can be fed into the MP V2 endpoints `/api/v1/wechat_mp/v2/fetch_account_profile` / `fetch_account_articles`.\n\n### Response structure & JSON Path:\n#### `raw=false` (simplified, snake_case):\n- Keyword echo: `$.data.keyword`\n- Effective vertical code (e.g. account=33554499): `$.data.business_type`\n- Total results: `$.data.total` — the **maximum** `totalCount` scanned across every box and subBox (a vertical's `totalCount` hangs off `subBoxes`; the All tab has no single total, so this is the largest contributing box). **null on a zero-result page** (no positive totalCount anywhere), so it is always null for the always-empty verticals\n- Has next page: `$.data.continue_flag`\n- Pagination cursor (pass back as the `cursor` parameter for the next page): `$.data.cursor`\n- Server-side offset (informational only; passing it back alone does **not** paginate): `$.data.offset`\n- Results on this page: `$.data.count`\n- Flattened result item list (items of all boxes / subBoxes merged): `$.data.items[]`\n- Server-issued vertical tab list (only present for `business_type=all`, null otherwise): `$.data.categories[]` — each entry has `.type` / `.word` / `.extra_kvs`. **This is the authoritative list of verticals actually available to the serving account.** Note `.type` is the vertical's **integer code** (e.g. 33554499) while this endpoint's `business_type` accepts only the 18 **string keys** above — an integer is rejected (422), so map it yourself (e.g. 33554499 → `account`).\n- Server wording for a zero-result page: `$.data.no_more` (present = a legitimate empty result from WeChat, **not** a failed call)\n- Single item (N is the index; fields vary by vertical; below is an `account` example):\n    - Title (with `<em>` highlight): `$.data.items[N].title`\n    - Description: `$.data.items[N].desc`\n    - Document id: `$.data.items[N].docID`\n    - Type name (e.g. \"公众号\"): `$.data.items[N].accTypeName`\n    - Jump info: `$.data.items[N].jumpInfo` (`.userName` = `gh_…`, `.nickName`, `.signature`)\n    - Video vertical items also carry `exportId` (+ `jumpInfo.extInfo.feedNonceId`) → see \"Typical chains\" above\n#### `raw=true` (raw, default for this endpoint):\n- `data` top level: `keyword` / `business_type` / `results` (items are **not** flattened) / `total` / `continue_flag` / `offset` / `cursor` / `categories` / `no_more` (`total` / `categories` / `no_more` are top level in both modes — the key sets are aligned)\n- Full result set: `$.data.results`\n- Result box array: `$.data.results.data[]`; each box's results are in `$.data.results.data[M].items[]` and `$.data.results.data[M].subBoxes[K].items[]` — the `items[]` of `raw=false` is the flattened merge of these.\n- Has next page: `$.data.continue_flag` (top level for both `raw=true` / `raw=false`)\n- Pagination cursor: `$.data.cursor` — pass it back as the `cursor` parameter for the next page; `$.data.offset` is only the server-side offset and passing it back alone does **not** paginate\n- Read the total from the top level `$.data.total` (present in both raw modes) — it is the **maximum** of `$.data.results.data[M].totalCount` and `$.data.results.data[M].subBoxes[K].totalCount`; a vertical's number hangs off `subBoxes`, so reading only the top-level box's `totalCount` yields null\n- For result iteration, prefer `raw=false` (items already flattened) for cleaner paths.",
+    "operationId": "fetch_search_api_v1_wechat_search_v2_fetch_search_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchSearchRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/wechat_search/v2/fetch_search_videos": {
+   "post": {
+    "tags": [
+     "WeChat-Search-V2-API"
+    ],
+    "summary": "搜视频号视频（时长/排序/时间筛选）/WeChat Channels Video Search",
+    "description": "# [中文]\n### 用途:\n- 专搜视频号视频（`video` 垂类），并支持搜索结果页里的「时长」「不限/最新/最热」排序与「时间」下拉。\n- 等价于综合搜索 `/fetch_search`（`business_type=video`）再叠加筛选，筛选项均实测有效。\n- 价格：0.01$/次\n- ⏱️ 由于微信服务器原因，本接口响应较慢，请将客户端请求超时（timeout）设置为 30 秒；timeout 设置过小会造成已扣费但收不到响应的情况。\n- ⚠️ 大整数 ID 精度：响应中的 `docID` / `feedNonceId` 等为 64 位大整数，超出 JavaScript 安全整数范围（2^53-1）。请始终以**字符串**方式接收 / 传递这类 ID（解析 JSON 用 json-bigint 或按文本取值），勿让其经过 JS `Number`。Swagger UI 文档页对超大整数会末位舍入显示，属正常现象，不影响接口实际返回的数据。\n### 参数:\n- keyword: 搜索关键词（去空白后 1-100 字）。示例 `美食`\n- duration: 可选，默认 `all`。时长档（video 垂类专属）—— 不限 `all`/0 / 短(<5min) `short`/1 / 中(5-10min) `medium`/2 / 长(20min+) `long`/3，字符串键或整数均可，非法值报错（400）。\n- sort: 可选，默认 `default`。排序 —— 不限(相关性) `default`/0 / 最新(发布时间降序) `latest`/1 / 最热(点赞降序) `hot`/2，字符串键或整数均可，非法值报错（400）。\n- publish_time: 可选，默认 `all`。发布时间 —— 不限 `all`/0 / 最近一天 `day`/1 / 最近七天 `week`/2 / 最近半年 `half_year`/3，字符串键或整数均可，非法值报错（400）。\n- offset: 可选，默认 0（>=0）。首页传 `0`；翻页请用 `cursor`（只传 offset 无效）。\n- cursor: 可选。翻页游标，用法同综合搜索 `/fetch_search`。首页留空；翻页时把上一页响应返回的 `cursor` 原样传回（须同时重复上一页的 `duration` / `sort` / `publish_time`）。\n- raw: 可选，默认 True。True=原始搜索响应；False=精简解析。\n### 返回:\n- 视频号视频搜索结果列表（结构同综合搜索的 `video` 垂类）\n\n### 典型链路:\n- 💡 排序下拉里的「账号」选项**不是排序**，而是切到公众号垂类 —— 用综合搜索 `/fetch_search`（`business_type=account`）。\n- 💡 **拿视频号详情（媒体下载地址 / decode_key）**：视频结果项**不直接含**媒体，只给 `exportId`（+ `jumpInfo.extInfo.feedNonceId`）。要下载 / 解密：取 `exportId` → 走视频号 V2 接口 `/api/v1/wechat_channels/v2/fetch_video_detail`（传 `export_id`）拿 `media`（`url` / `url_token` / `decode_key`）和明文 `username`。结果字段与响应结构说明同 `/fetch_search`。\n\n# [English]\n### Purpose:\n- Search WeChat Channels videos specifically (`video` vertical), with the result page's \"duration\" filter, \"relevance/newest/most-liked\" sort, and \"time\" dropdown.\n- Equivalent to universal search `/fetch_search` (`business_type=video`) plus filters; all filters are verified to work.\n- Price: $0.01 per request\n- ⏱️ Due to WeChat server latency, this endpoint responds slowly; please set your client request timeout to 30 seconds — a timeout that is too small may result in being billed without receiving the response.\n- ⚠️ Large-integer ID precision: IDs such as `docID` / `feedNonceId` in the response are 64-bit big integers beyond JavaScript's safe-integer range (2^53-1). Always receive / pass such IDs as **strings** (parse JSON with json-bigint or read them as text), never through JS `Number`. Swagger UI rounds the trailing digits of huge integers in its docs view — this is expected and does not affect the actual data returned by the API.\n### Parameters:\n- keyword: Search keyword (1-100 chars after trimming). E.g. `美食`\n- duration: Optional, default `all`. Duration tier (Channels video only) — `all`/0 / `short`/1 (<5min) / `medium`/2 (5-10min) / `long`/3 (20min+); string key or integer, invalid values rejected (400).\n- sort: Optional, default `default`. Sort — `default`/0 (relevance) / `latest`/1 (newest) / `hot`/2 (most liked); string key or integer, invalid values rejected (400).\n- publish_time: Optional, default `all`. Publish time — `all`/0 / `day`/1 / `week`/2 / `half_year`/3; string key or integer, invalid values rejected (400).\n- offset: Optional, default 0 (>=0). Pass `0` for the first page; use `cursor` to paginate (offset alone does not work).\n- cursor: Optional. Pagination cursor, same usage as universal search `/fetch_search`. Leave empty for the first page; for the next page pass back the `cursor` from the previous response (repeat the same `duration` / `sort` / `publish_time`).\n- raw: Optional, default True. True=raw search response; False=simplified parsing.\n### Return:\n- Channels video search result list (same structure as the `video` vertical of universal search)\n\n### Typical chains:\n- 💡 The \"account\" option in the sort dropdown is **not a sort** — it switches to the official-account vertical; use universal search `/fetch_search` (`business_type=account`).\n- 💡 **To get Channels video detail (media download address / decode_key)**: video result items do **not** contain media directly — only `exportId` (+ `jumpInfo.extInfo.feedNonceId`). To download / decrypt: take `exportId` → call the Channels V2 endpoint `/api/v1/wechat_channels/v2/fetch_video_detail` (pass `export_id`) to get `media` (`url` / `url_token` / `decode_key`) and the plain `username`. Result fields and response structure are the same as `/fetch_search`.",
+    "operationId": "fetch_search_videos_api_v1_wechat_search_v2_fetch_search_videos_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FetchSearchVideosRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "FetchAccountArticlesRequest": {
+    "properties": {
+     "username": {
+      "type": "string",
+      "maxLength": 80,
+      "pattern": "^[0-9A-Za-z][-_0-9A-Za-z]{1,63}(@[0-9A-Za-z]{1,16})?$",
+      "title": "Username",
+      "description": "公众号 username。三种形态都支持：`gh_…`、`gh_…@app`（关联小程序的账号）、以及自定义微信号（如 `nikejdi`）。取自文章详情接口响应的 `$.data.content.user_name`/Official account username. Three forms are supported: `gh_…`, `gh_…@app` (mini-program-linked accounts) and custom WeChat IDs (e.g. `nikejdi`). Taken from `$.data.content.user_name` of the article detail endpoints",
+      "example": "gh_363b924965e9"
+     },
+     "page_size": {
+      "type": "integer",
+      "maximum": 100.0,
+      "minimum": 1.0,
+      "title": "Page Size",
+      "description": "每页数量（默认 20）。⚠️ 微信当前**忽略**该参数：返回条数由公众号自身决定，实测取 1 与取 40 结果完全相同；翻页请用 offset / next_offset/Articles per page (default 20). NOTE: WeChat currently ignores this parameter — the count is decided by the account itself; paginate with offset / next_offset",
+      "default": 20
+     },
+     "offset": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 8192,
+        "pattern": "^[A-Za-z0-9+/=_-]*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Offset",
+      "description": "翻页游标（base64），首页留空；翻页传上一页响应的 next_offset/Pagination cursor (base64), leave empty for first page; for the next page pass next_offset from the previous response",
+      "default": ""
+     },
+     "item_show_type": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Item Show Type",
+      "description": "内容栏目：留空/0=文章（默认）、5=视频、7=音频、8=贴图/Content tab: empty/0=articles (default), 5=videos, 7=audios, 8=image-text posts"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始响应；False=精简解析结构/True=raw response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "username"
+    ],
+    "title": "FetchAccountArticlesRequest"
+   },
+   "FetchAccountRequest": {
+    "properties": {
+     "username": {
+      "type": "string",
+      "maxLength": 80,
+      "pattern": "^[0-9A-Za-z][-_0-9A-Za-z]{1,63}(@[0-9A-Za-z]{1,16})?$",
+      "title": "Username",
+      "description": "公众号 username。三种形态都支持：`gh_…`、`gh_…@app`（关联小程序的账号）、以及自定义微信号（如 `nikejdi`）。取自文章详情接口响应的 `$.data.content.user_name`/Official account username. Three forms are supported: `gh_…`, `gh_…@app` (mini-program-linked accounts) and custom WeChat IDs (e.g. `nikejdi`). Taken from `$.data.content.user_name` of the article detail endpoints",
+      "example": "gh_363b924965e9"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始响应；False=精简解析结构/True=raw response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "username"
+    ],
+    "title": "FetchAccountRequest"
+   },
+   "FetchArticleCommentsRequest": {
+    "properties": {
+     "url": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^https?://mp\\.weixin\\.qq\\.com/s([/?].+)?$",
+      "title": "Url",
+      "description": "公众号文章链接（https://mp.weixin.qq.com/s/…）/WeChat MP article URL (https://mp.weixin.qq.com/s/…)",
+      "example": "https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw"
+     },
+     "buffer": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 8192
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Buffer",
+      "description": "翻页游标，首页留空；翻页传上一页响应的 buffer/Pagination cursor, leave empty for first page; pass buffer from the previous response",
+      "default": ""
+     },
+     "comment_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 32,
+        "pattern": "^[0-9]*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment Id",
+      "description": "文章的评论 id（可选，**性能捷径**）：不传时上游要先抓并解析整篇文章 HTML 才能拿到它，约占本接口耗时的一半；已有该值时传进来可显著加快。取自 /fetch_article_detail 或 /fetch_article_detail_h5 响应的 `$.data.content.comment_id`/Article comment id (optional, performance shortcut): when omitted, upstream must fetch and parse the whole article HTML to obtain it, which accounts for about half of this endpoint's latency"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始响应；False=精简解析结构/True=raw response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "url"
+    ],
+    "title": "FetchArticleCommentsRequest"
+   },
+   "FetchArticleDetailRequest": {
+    "properties": {
+     "url": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^https?://mp\\.weixin\\.qq\\.com/s([/?].+)?$",
+      "title": "Url",
+      "description": "公众号文章链接（https://mp.weixin.qq.com/s/… 或带 __biz 的长链）/WeChat MP article URL (https://mp.weixin.qq.com/s/… or long URL with __biz)",
+      "example": "https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始响应；False=精简解析结构/True=raw response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "url"
+    ],
+    "title": "FetchArticleDetailRequest"
+   },
+   "FetchArticleStatsH5Request": {
+    "properties": {
+     "url": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^https?://mp\\.weixin\\.qq\\.com/s([/?].+)?$",
+      "title": "Url",
+      "description": "公众号文章链接（https://mp.weixin.qq.com/s/… 或带 __biz 的长链）/WeChat MP article URL (https://mp.weixin.qq.com/s/… or long URL with __biz)",
+      "example": "https://mp.weixin.qq.com/s/TSNQKkRpN1qbKsT7BvzqIw"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始响应；False=精简解析结构/True=raw response; False=simplified parsed structure",
+      "default": true
+     },
+     "comment_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 32,
+        "pattern": "^[0-9]*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment Id",
+      "description": "文章的评论 id（可选，**性能捷径**）：不传时上游要先抓并解析整篇文章 HTML 才能拿到它，约占本接口耗时的一半；已有该值时传进来可显著加快。取自 /fetch_article_detail 或 /fetch_article_detail_h5 响应的 `$.data.content.comment_id`/Article comment id (optional, performance shortcut): when omitted, upstream must fetch and parse the whole article HTML to obtain it, which accounts for about half of this endpoint's latency"
+     }
+    },
+    "type": "object",
+    "required": [
+     "url"
+    ],
+    "title": "FetchArticleStatsH5Request",
+    "description": "`/fetch_article_stats_h5` 请求体。\n\n单独一个模型而不是复用 FetchArticleDetailRequest：comment_id 只对本接口有意义，\n挂在共用模型上会让文章详情等接口的文档里也冒出一个用不上的参数。"
+   },
+   "FetchCommentRepliesRequest": {
+    "properties": {
+     "url": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^https?://mp\\.weixin\\.qq\\.com/s([/?].+)?$",
+      "title": "Url",
+      "description": "公众号文章链接（https://mp.weixin.qq.com/s/…）/WeChat MP article URL (https://mp.weixin.qq.com/s/…)",
+      "example": "http://mp.weixin.qq.com/s?__biz=Mzk3NTA0MzM5NA==&mid=2247483745&idx=1&sn=3f34e768cf457a501038991ed30be1f4#rd"
+     },
+     "content_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 32,
+        "pattern": "^[0-9]*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Content Id",
+      "description": "目标一级评论的 content_id（纯数字），不传则自动取第一条有回复的评论/content_id (numeric) of the target first-level comment; defaults to the first comment that has replies",
+      "default": "",
+      "example": "12109128638545265979"
+     },
+     "offset": {
+      "type": "integer",
+      "minimum": 0.0,
+      "title": "Offset",
+      "description": "回复翻页偏移，首页 0；has_more=true 时传上次返回的 next_offset/Reply pagination offset, 0 for first page; pass next_offset from the previous response when has_more=true",
+      "default": 0
+     },
+     "comment_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 32,
+        "pattern": "^[0-9]*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment Id",
+      "description": "文章的评论 id（可选，**性能捷径**）：不传时上游要先抓并解析整篇文章 HTML 才能拿到它，约占本接口耗时的一半；已有该值时传进来可显著加快。取自 /fetch_article_detail 或 /fetch_article_detail_h5 响应的 `$.data.content.comment_id`/Article comment id (optional, performance shortcut): when omitted, upstream must fetch and parse the whole article HTML to obtain it, which accounts for about half of this endpoint's latency"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始响应；False=精简解析结构/True=raw response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "url"
+    ],
+    "title": "FetchCommentRepliesRequest"
+   },
+   "FetchSearchRequest": {
+    "properties": {
+     "keyword": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Keyword",
+      "description": "搜索关键词（1-100 字）/Search keyword (1-100 chars)",
+      "example": "人民日报"
+     },
+     "business_type": {
+      "type": "string",
+      "enum": [
+       "all",
+       "account",
+       "article",
+       "video",
+       "sticker",
+       "underline",
+       "encyclopedia",
+       "live_stream",
+       "comment",
+       "listen",
+       "news",
+       "photos",
+       "book",
+       "moments",
+       "image",
+       "mini_game",
+       "weixin_index",
+       "ai_search"
+      ],
+      "title": "Business Type",
+      "description": "垂类字符串键（共 18 个）。**实测有结果**：综合 all / 公众号·服务号·视频号 account / 文章 article / 视频 video / 表情 sticker。其余键（underline / encyclopedia / live_stream / comment / listen / news / photos / book / moments / image / mini_game / weixin_index / ai_search）由微信服务端按账号与地区下发，当前实测恒返回空结果（count=0 + no_more 文案，仍按一次正常调用计费）。当前账号真正可用的 tab 以综合搜索响应里的 categories 为准；传列表外的值直接报错（422）/Vertical key (18 total). **Verified to return data**: all / account / article / video / sticker. The rest (underline / encyclopedia / live_stream / comment / listen / news / photos / book / moments / image / mini_game / weixin_index / ai_search) are gated server-side per account & region and currently always come back empty (count=0 plus a no_more message — still billed as a normal call). Use the `categories` field of an `all` search for the authoritative per-account tab list. Values outside this list are rejected (422)",
+      "default": "all",
+      "example": "account"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Sort",
+      "description": "排序（结果页「排序」下拉，综合与各垂类通用）：不限(相关性) default/0 / 最新(发布时间降序) latest/1 / 最热(点赞降序) hot/2，字符串键或整数均可/Sort (result page 'sort' dropdown, common to all verticals): default/0 (relevance) / latest/1 (newest) / hot/2 (most liked); string key or integer",
+      "default": "default",
+      "example": "hot"
+     },
+     "publish_time": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Publish Time",
+      "description": "发布时间（结果页「时间」下拉，通用）：不限 all/0 / 最近一天 day/1 / 最近七天 week/2 / 最近半年 half_year/3，字符串键或整数均可/Publish time (result page 'time' dropdown, common): all/0 / day/1 / week/2 / half_year/3; string key or integer",
+      "default": "all",
+      "example": "week"
+     },
+     "offset": {
+      "type": "integer",
+      "minimum": 0.0,
+      "title": "Offset",
+      "description": "首页传 0；翻页请用 cursor（只传 offset 无效，每页都回到第一页）/Pass 0 for the first page; use cursor to paginate (offset alone does not work — it returns the first page every time)",
+      "default": 0
+     },
+     "cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cursor",
+      "description": "翻页游标：首页留空；翻页时把上一页响应返回的 cursor 原样传回/Pagination cursor: leave empty for the first page; for the next page pass back the cursor returned in the previous response"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始搜索响应；False=精简解析结构/True=raw search response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "keyword"
+    ],
+    "title": "FetchSearchRequest"
+   },
+   "FetchSearchVideosRequest": {
+    "properties": {
+     "keyword": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Keyword",
+      "description": "搜索关键词（1-100 字）/Search keyword (1-100 chars)",
+      "example": "美食"
+     },
+     "duration": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Duration",
+      "description": "时长档（video 垂类专属）：不限 all/0 / 短(<5min) short/1 / 中(5-10min) medium/2 / 长(20min+) long/3，字符串键或整数均可/Duration tier (Channels video only): all/0 / short/1 (<5min) / medium/2 (5-10min) / long/3 (20min+); string key or integer",
+      "default": "all",
+      "example": "short"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Sort",
+      "description": "排序：不限(相关性) default/0 / 最新(发布时间降序) latest/1 / 最热(点赞降序) hot/2，字符串键或整数均可/Sort: default/0 (relevance) / latest/1 (newest) / hot/2 (most liked); string key or integer",
+      "default": "default",
+      "example": "hot"
+     },
+     "publish_time": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Publish Time",
+      "description": "发布时间：不限 all/0 / 最近一天 day/1 / 最近七天 week/2 / 最近半年 half_year/3，字符串键或整数均可/Publish time: all/0 / day/1 / week/2 / half_year/3; string key or integer",
+      "default": "all",
+      "example": "week"
+     },
+     "offset": {
+      "type": "integer",
+      "minimum": 0.0,
+      "title": "Offset",
+      "description": "首页传 0；翻页请用 cursor（只传 offset 无效）/Pass 0 for the first page; use cursor to paginate (offset alone does not work)",
+      "default": 0
+     },
+     "cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cursor",
+      "description": "翻页游标，用法同综合搜索：首页留空；翻页时把上一页响应返回的 cursor 原样传回/Pagination cursor, same as universal search: leave empty for the first page; pass back the cursor from the previous response"
+     },
+     "raw": {
+      "type": "boolean",
+      "title": "Raw",
+      "description": "True=原始搜索响应；False=精简解析结构/True=raw search response; False=simplified parsed structure",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "keyword"
+    ],
+    "title": "FetchSearchVideosRequest"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "ResponseModel": {
+    "properties": {
+     "code": {
+      "type": "integer",
+      "title": "Code",
+      "description": "HTTP status code | HTTP状态码",
+      "default": 200
+     },
+     "request_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Request Id",
+      "description": "Unique request identifier | 唯一请求标识符"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "description": "Response message (EN-US) | 响应消息 (English)",
+      "default": "Request successful. This request will incur a charge."
+     },
+     "message_zh": {
+      "type": "string",
+      "title": "Message Zh",
+      "description": "Response message (ZH-CN) | 响应消息 (中文)",
+      "default": "请求成功，本次请求将被计费。"
+     },
+     "support": {
+      "type": "string",
+      "title": "Support",
+      "description": "Support message | 支持消息",
+      "default": "Discord: https://discord.gg/aMEAS8Xsvz"
+     },
+     "time": {
+      "type": "string",
+      "title": "Time",
+      "description": "The time the response was generated | 生成响应的时间"
+     },
+     "time_stamp": {
+      "type": "integer",
+      "title": "Time Stamp",
+      "description": "The timestamp the response was generated | 生成响应的时间戳"
+     },
+     "time_zone": {
+      "type": "string",
+      "title": "Time Zone",
+      "description": "The timezone of the response time | 响应时间的时区",
+      "default": "America/Los_Angeles"
+     },
+     "docs": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Docs",
+      "description": "Link to the API Swagger documentation for this endpoint | 此端点的 API Swagger 文档链接"
+     },
+     "cache_message": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cache Message",
+      "description": "Cache message (EN-US) | 缓存消息 (English)",
+      "default": "This response is cached and accessible via the URL below for 24 hours at no extra cost. The cache is for request tracing only — it doesn't affect the API's data freshness and won't be returned through the API again."
+     },
+     "cache_message_zh": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cache Message Zh",
+      "description": "Cache message (ZH-CN) | 缓存消息 (中文)",
+      "default": "本次响应已缓存，可通过下方 URL 直接查看，有效期 24 小时，访问缓存链接无额外费用。缓存仅用于请求溯源，不影响接口数据的时效性，也不会再次通过接口返回。"
+     },
+     "cache_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cache Url",
+      "description": "The URL to access the cached result | 访问缓存结果的 URL"
+     },
+     "router": {
+      "type": "string",
+      "title": "Router",
+      "description": "The endpoint that generated this response | 生成此响应的端点",
+      "default": ""
+     },
+     "params": {
+      "title": "Params",
+      "description": "The parameters used in the request | 请求中使用的参数",
+      "default": {}
+     },
+     "data": {
+      "anyOf": [
+       {},
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Data",
+      "description": "The response data | 响应数据"
+     }
+    },
+    "type": "object",
+    "title": "ResponseModel"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}

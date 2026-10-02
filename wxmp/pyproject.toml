@@ -1,0 +1,31 @@
+[project]
+name = "wxmp"
+version = "0.1.0"
+description = "微信公众号订阅采集工具 —— 订阅、抓全文、存 SQLite、导出 Markdown"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+# 刻意只保留一个外部依赖。
+# sqlite3 / argparse / json / dataclasses / urllib 全部来自标准库。
+# 依赖越少，长期无人值守运行时踩雷的面越小。
+dependencies = [
+    "requests==2.32.3",
+]
+
+[dependency-groups]
+# 仅开发期：uv sync --group dev
+dev = ["pytest>=8"]
+
+[project.scripts]
+wxmp = "wxmp.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wxmp"]

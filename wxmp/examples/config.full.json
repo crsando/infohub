@@ -1,0 +1,64 @@
+{
+  "version": 1,
+
+  "provider": {
+    "name": "tikhub",
+    "base_url": "https://api.tikhub.io",
+    "token": "在这里填入你的 TikHub API key",
+    "timeout": 120,
+    "retry": {
+      "max": 3,
+      "backoff": [2, 5, 15]
+    },
+    "rate_limit": {
+      "qps": 1
+    }
+  },
+
+  "schedule": {
+    "timezone": "Asia/Shanghai",
+    "default_times": ["09:00", "16:00"],
+    "catch_up_on_run": true
+  },
+
+  "storage": {
+    "data_dir": null,
+    "keep_raw": true
+  },
+
+  "export": {
+    "enabled": true,
+    "dir": "~/wechat-articles",
+    "layout": "by_account",
+    "filename": "{date} {title}.md",
+    "bold_keywords": true,
+    "include_images": false
+  },
+
+  "accounts": [
+    {
+      "nick": "仓都加满",
+      "username": "mtlsnow",
+      "user_name": "gh_e2899e9a812e",
+      "media_name": "深圳和光同行传媒有限公司",
+      "enabled": true,
+      "times": null,
+      "first_page_only": true,
+      "added_at": "2026-10-02T12:40:00+08:00",
+      "last_run_at": null,
+      "last_seen_url": null
+    },
+    {
+      "nick": "某个发文不规律的号",
+      "username": "example_username",
+      "user_name": "",
+      "media_name": "",
+      "enabled": true,
+      "times": ["08:30", "12:00", "16:00", "21:00"],
+      "first_page_only": true,
+      "added_at": "2026-10-02T12:40:00+08:00",
+      "last_run_at": null,
+      "last_seen_url": null
+    }
+  ]
+}

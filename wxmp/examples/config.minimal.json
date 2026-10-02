@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "provider": {
+    "token": "在这里填入你的 TikHub API key"
+  },
+  "export": {
+    "enabled": true,
+    "dir": "~/wechat-articles"
+  },
+  "accounts": []
+}

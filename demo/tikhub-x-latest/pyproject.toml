@@ -1,0 +1,9 @@
+[project]
+name = "tikhub-x-latest-demo"
+version = "0.1.0"
+description = "Fetch the latest posts for an X/Twitter account through TiKHub"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = false
