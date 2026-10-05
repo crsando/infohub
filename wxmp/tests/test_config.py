@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from wxmp.config import Account, Config, normalize_time  # noqa: E402
 from wxmp.errors import ConfigError  # noqa: E402
+from wxmp import paths  # noqa: E402
 
 
 # ---------- 时刻归一化 ----------
@@ -127,11 +128,72 @@ def test_config往返序列化不丢字段():
     assert a.times == ["08:30"]
 
 
+def test_TIKHUB_TOKEN优先于配置文件(monkeypatch):
+    cfg = Config()
+    cfg.provider.token = "config-token"
+    monkeypatch.setenv("TIKHUB_TOKEN", "env-token")
+    assert cfg.effective_token() == "env-token"
+    assert cfg.token_source() == "环境变量 TIKHUB_TOKEN"
+
+
+def test_未设置TIKHUB_TOKEN时回退配置文件(monkeypatch):
+    cfg = Config()
+    cfg.provider.token = "config-token"
+    monkeypatch.delenv("TIKHUB_TOKEN", raising=False)
+    assert cfg.effective_token() == "config-token"
+    assert cfg.token_source() == "配置文件 provider.token"
+
+
+def test_空白TIKHUB_TOKEN回退配置文件(monkeypatch):
+    cfg = Config()
+    cfg.provider.token = "config-token"
+    monkeypatch.setenv("TIKHUB_TOKEN", "  \n")
+    assert cfg.effective_token() == "config-token"
+
+
 def test_缺username的账号被校验拒绝():
     cfg = Config()
     cfg.accounts.append(Account(nick="没标识"))
     with pytest.raises(ConfigError, match="username"):
         Config.from_dict(cfg.to_dict())
+
+
+def test_配置的数据目录用于数据库和raw存档(tmp_path, monkeypatch):
+    from wxmp.cli import main
+    from wxmp.pipeline import collect_account
+    from wxmp.store import Store
+
+    monkeypatch.delenv("WXMP_DATA_DIR", raising=False)
+    monkeypatch.setenv("WXMP_CONFIG", str(tmp_path / "config.json"))
+    cfg = Config()
+    cfg.provider.token = "test-token"
+    cfg.storage.data_dir = str(tmp_path / "custom-data")
+    cfg.accounts.append(Account(nick="测试号", username="gh_test"))
+    cfg.save(tmp_path / "config.json")
+
+    assert main(["run", "--dry-run"]) == 0
+    assert paths.db_path(cfg.storage.data_dir).exists()
+
+    class Client:
+        def account_articles(self, username, offset=None):
+            return [{"url": "https://mp.weixin.qq.com/s/test-article", "create_time": 1}], None, True
+
+        def article_detail(self, url):
+            return {
+                "content": {"title": "测试文章", "content_text": "正文"},
+                "envelope": {"data": {"url": url}},
+            }
+
+    with Store(paths.db_path(cfg.storage.data_dir)) as store:
+        store.upsert_account("gh_test", nick="测试号")
+        assert collect_account(Client(), store, cfg, "gh_test").new_articles == 1
+
+    assert len(list(paths.raw_dir(cfg.storage.data_dir).rglob("*.json"))) == 1
+
+
+def test_环境变量优先于配置的数据目录(tmp_path, monkeypatch):
+    monkeypatch.setenv("WXMP_DATA_DIR", str(tmp_path / "env-data"))
+    assert paths.data_dir(str(tmp_path / "config-data")) == tmp_path / "env-data"
 
 
 # ---------- 从 URL 判断输入形态 ----------

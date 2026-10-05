@@ -63,6 +63,14 @@ def test_url_id_人类可读形式():
     assert ident.startswith("2247517798_1_")
 
 
+def test_url_id_短链接可以安全用作文件名():
+    url = "https://mp.weixin.qq.com/s/AbCdEf123"
+    ident = url_id(url)
+    assert ident == url_id(url)
+    assert len(ident) == 16
+    assert "/" not in ident
+
+
 def _fresh_store() -> Store:
     d = Path(tempfile.mkdtemp(prefix="wxmp-test-"))
     return Store(d / "wxmp.db")

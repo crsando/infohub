@@ -212,7 +212,7 @@ outputs/wxmp/
   "provider": {
     "name": "tikhub",
     "base_url": "https://api.tikhub.io",
-    "token": "<TIKHUB_API_KEY>",                 // 直接明文写这里
+    "token": "<TIKHUB_API_KEY>",                 // TIKHUB_TOKEN 未设置时使用
     "timeout": 120,
     "retry": { "max": 3, "backoff": [2, 5, 15] },
     "rate_limit": { "qps": 1 }
@@ -257,8 +257,8 @@ outputs/wxmp/
 
 - **`default_times` 与 `times` 是覆盖关系**：号可以单独设定拉取时刻（比如发文不规律的号多拉几次）。
 - **`username` 是唯一必需字段**。`nick` / `media_name` 只是给人看的。
-- **token 直接明文写在 `provider.token`**。不做环境变量间接层、不做密钥管理、不做加密存储 ——
-  这是单机自用工具，多一层抽象只增加心智负担。唯一约束是下面这条：
+- **凭据优先使用环境变量 `TIKHUB_TOKEN`，未设置时回退到 `provider.token`**。
+  环境变量不会写回配置文件；配置字段仍是明文存放。唯一约束是下面这条：
   **`config.json` 不要提交进 git**（`.gitignore` 里排除）。
 - **`catch_up_on_run`**：见 §7（延后实施），如果机器 9:00 没开机，下次启动时是否补拉。默认 `true`。
 
@@ -556,7 +556,7 @@ outputs/wxmp/          # 完整代码 + 文档 + 测试 + 示例配置
 |---|---|---|
 | 1 | **主语言** | **Python 3.12**（§1.1 有完整论证） |
 | 2 | **HTTP 库** | **`requests`**，且锁死具体版本（§1.2） |
-| 3 | **token 存放** | **明文写在 `provider.token`**，不做环境变量/密钥管理层；只需 `.gitignore` 排除 config.json |
+| 3 | **token 存放** | **`TIKHUB_TOKEN` 优先，`provider.token` 兜底**；配置字段明文存放，只需 `.gitignore` 排除 config.json |
 | 4 | **平台语义** | 代码只写 POSIX（Linux/macOS），不出现 Windows 路径 |
 | 5 | **config 定位** | 环境变量 `WXMP_CONFIG` 指定绝对路径，回落 `~/.config/wxmp/config.json` |
 | 6 | **单一入口** | `wxmp`，所有功能挂子命令 |

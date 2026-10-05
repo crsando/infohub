@@ -109,6 +109,30 @@ def test_导出后标记为已导出():
         store.close()
 
 
+def test_同日同标题文章不会互相覆盖(tmp_path):
+    store, cfg = _setup(tmp_path)
+    try:
+        store.insert_article(
+            ArticleRow(
+                url=canonical_url(URL.replace("mid=2247517885", "mid=2247517886")),
+                account="mtlsnow",
+                title="今天港股为什么开盘大跌？",
+                content="第二篇的正文",
+                published=1790909163,
+                collected=1790911039,
+            )
+        )
+
+        written = export_articles(store, cfg)
+
+        assert len(written) == len(set(written)) == 2
+        assert all(path.exists() for path in written)
+        assert any("第二篇的正文" in path.read_text(encoding="utf-8") for path in written)
+        assert store.stats()["exported"] == 2
+    finally:
+        store.close()
+
+
 def test_flat布局不建子目录():
     tmp = Path(tempfile.mkdtemp(prefix="wxmp-export-"))
     store, cfg = _setup(tmp)

@@ -29,7 +29,7 @@ wxmp check          # 会实际发一次请求验证
 
 **排查**：
 
-1. 打开 config.json，确认 `provider.token` 不是空字符串、没有多余引号或换行
+1. 确认 `TIKHUB_TOKEN` 环境变量或 config.json 的 `provider.token` 至少有一处非空；环境变量优先
 2. 到上游后台确认 key 还有效、额度没耗尽
 3. `wxmp check` 看打码后的 token 前后几位对不对
 

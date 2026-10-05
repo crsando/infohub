@@ -20,8 +20,9 @@ uv sync
 uv run wxmp init
 #  → 建立 ~/.config/wxmp/config.json 与 ~/.local/share/wxmp/
 
-# 3. 编辑上一步打印的 config.json：
-#    - provider.token 填 TikHub 的 API key
+# 3. 配置 TikHub API key（二选一，环境变量优先）：
+#    export TIKHUB_TOKEN='你的 TikHub API key'
+#    或编辑 config.json 的 provider.token
 #    - 要导出 Markdown：export.enabled=true，export.dir=输出目录
 
 # 4. 加订阅
@@ -56,7 +57,7 @@ wxmp/
 │   ├── store.py           # SQLite + FTS5，URL 归一化
 │   ├── export.py          # Markdown 导出
 │   └── errors.py          # 异常与退出码
-├── tests/                 # 31 个回归测试（锁住开发中踩到的坑）
+├── tests/                 # 回归测试（锁住开发中踩到的坑）
 ├── examples/              # 最小 / 完整配置示例
 ├── docs/                  # 使用与设计文档（见下表）
 └── dev/                   # 开发参考：TikHub 接口规格裁剪版 + 真实响应样本
@@ -84,6 +85,11 @@ wxmp run                                    # 读这个文件
 ```
 
 数据目录同理：`WXMP_DATA_DIR`，默认 `~/.local/share/wxmp`。
+
+### TikHub token
+
+`TIKHUB_TOKEN` 有值时优先使用它；未设置或为空时回退到配置文件里的 `provider.token`。
+环境变量只用于当前进程，不会被 `wxmp` 写回 config.json。
 
 ### 去重主键是归一化后的文章 URL
 

@@ -1,0 +1,26 @@
+[project]
+name = "infohub"
+version = "0.1.0"
+description = "统一编排 wxmp/xnews，调用本地 LLM 摘要并发布到 Memos"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "requests==2.32.3",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[project.scripts]
+infohub = "infohub.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/infohub"]

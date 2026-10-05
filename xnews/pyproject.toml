@@ -1,0 +1,26 @@
+[project]
+name = "xnews"
+version = "0.1.0"
+description = "X/Twitter account monitor backed by TiKHub, with raw JSON and Markdown archives"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "requests==2.32.3",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[project.scripts]
+xnews = "xnews.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/xnews"]

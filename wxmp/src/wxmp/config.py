@@ -2,7 +2,7 @@
 
 设计取向（用户明确要求）：**不要过度设计**。
 所以这里刻意不做 pydantic、不做 schema 文件、不做密钥管理层。
-token 就是明文写在 provider.token 里 —— 这是单机自用工具，多一层抽象只增加心智负担。
+凭据优先从 `TIKHUB_TOKEN` 环境变量读取，没有设置时再使用 `provider.token`。
 
 唯一的约束：写回必须是原子的（先写临时文件再 rename），
 避免配置写到一半断电导致 config.json 变成半截 JSON。
@@ -22,6 +22,7 @@ from . import paths
 from .errors import ConfigError
 
 CURRENT_VERSION = 1
+ENV_TIKHUB_TOKEN = "TIKHUB_TOKEN"
 
 # HH:MM，24 小时制。允许 "9:00" 这种写法，读入后归一化成 "09:00"。
 _TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
@@ -233,6 +234,14 @@ class Config:
                     f"账号「{a.nick or '(未命名)'}」缺少 username",
                     hint="username 是拉取时唯一必需的字段",
                 )
+
+    def effective_token(self) -> str:
+        """返回实际请求使用的 token，环境变量优先且不写回配置。"""
+        return os.environ.get(ENV_TIKHUB_TOKEN, "").strip() or self.provider.token.strip()
+
+    def token_source(self) -> str:
+        """返回实际 token 的来源，用于体检输出。"""
+        return "环境变量 TIKHUB_TOKEN" if os.environ.get(ENV_TIKHUB_TOKEN, "").strip() else "配置文件 provider.token"
 
     # ---------- 序列化 ----------
 

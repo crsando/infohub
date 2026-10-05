@@ -57,6 +57,10 @@ def _load_config(require: bool = True) -> Config | None:
     return Config.load(p)
 
 
+def _open_store(cfg: Config) -> Store:
+    return Store(paths.db_path(cfg.storage.data_dir))
+
+
 # ---------------------------------------------------------------- 命令实现
 
 
@@ -69,9 +73,9 @@ def cmd_init(args) -> int:
         )
     cfg = default_config()
     cfg.save(path)
-    paths.ensure_dirs()
+    paths.ensure_dirs(cfg.storage.data_dir)
     print(f"已创建配置: {path}")
-    print(f"数据目录:   {paths.data_dir()}")
+    print(f"数据目录:   {paths.data_dir(cfg.storage.data_dir)}")
     print()
     print("下一步：")
     print("  1. 编辑配置填入上游 token:")
@@ -88,9 +92,9 @@ def cmd_add(args) -> int:
     kind, value = normalize_target(args.target)
 
     account: Account
-    with Store() as store:
+    with _open_store(cfg) as store:
         client = TikHubClient(
-            token=cfg.provider.token,
+            token=cfg.effective_token(),
             base_url=cfg.provider.base_url,
             timeout=cfg.provider.timeout,
             max_retries=cfg.provider.retry.max,
@@ -219,7 +223,7 @@ def cmd_remove(args) -> int:
     cfg = _load_config()
     acc = cfg.remove_account(args.key)
     cfg.save()
-    with Store() as store:
+    with _open_store(cfg) as store:
         store.remove_account(acc.username, keep_data=args.keep_data)
     print(f"已移除订阅: {acc.nick or acc.username}")
     if args.keep_data:
@@ -258,7 +262,7 @@ def cmd_toggle(args, enabled: bool) -> int:
         raise ConfigError(f"未找到订阅: {args.key}")
     acc.enabled = enabled
     cfg.save()
-    with Store() as store:
+    with _open_store(cfg) as store:
         store.upsert_account(acc.username, acc.nick, acc.user_name, acc.media_name, enabled)
     print(f"{'已启用' if enabled else '已停用'}: {acc.nick or acc.username}")
     return ExitCode.OK
@@ -317,7 +321,7 @@ def cmd_schedule(args) -> int:
 
 
 def _do_run(cfg: Config, account_keys=None, pages: int = 1, verbose: bool = False) -> int:
-    with Store() as store:
+    with _open_store(cfg) as store:
         def _export(summary):
             if not cfg.export.enabled or not cfg.export.dir:
                 return
@@ -348,7 +352,7 @@ def _do_run(cfg: Config, account_keys=None, pages: int = 1, verbose: bool = Fals
 def cmd_run(args) -> int:
     cfg = _load_config()
     if args.dry_run:
-        with Store() as store:
+        with _open_store(cfg) as store:
             summary = run_pipeline(cfg, store, account_keys=args.account, pages=args.pages, dry_run=True)
         print("将处理以下账号（未发送任何请求）：")
         for r in summary.results:
@@ -359,7 +363,7 @@ def cmd_run(args) -> int:
 
 def cmd_search(args) -> int:
     cfg = _load_config()
-    with Store() as store:
+    with _open_store(cfg) as store:
         rows = store.search(
             args.keyword,
             account=args.account,
@@ -384,7 +388,7 @@ def cmd_search(args) -> int:
 
 def cmd_show(args) -> int:
     cfg = _load_config()
-    with Store() as store:
+    with _open_store(cfg) as store:
         rows = store.recent(account=args.account, limit=args.limit)
     if not rows:
         print("库里还没有文章。")
@@ -404,7 +408,7 @@ def cmd_export(args) -> int:
             "export.dir 未配置",
             hint="在 config.json 的 export.dir 指定 Markdown 输出目录",
         )
-    with Store() as store:
+    with _open_store(cfg) as store:
         written = export_articles(
             store,
             cfg,
@@ -425,10 +429,10 @@ def cmd_export(args) -> int:
 
 def cmd_stats(args) -> int:
     cfg = _load_config()
-    with Store() as store:
+    with _open_store(cfg) as store:
         s = store.stats()
     print(f"配置:   {cfg.path}")
-    print(f"数据:   {paths.data_dir()}")
+    print(f"数据:   {paths.data_dir(cfg.storage.data_dir)}")
     print(f"订阅:   {s['accounts']} 个（启用 {s['accounts_enabled']}）")
     print(f"文章:   {s['articles']} 篇（已导出 {s['exported']}）")
     print(f"库大小: {s['db_bytes'] / 1024:.1f} KB")
@@ -447,11 +451,12 @@ def cmd_check(args) -> int:
     ok = True
     print("配置检查")
     print(f"  ✓ 配置文件: {cfg.path}")
-    if not cfg.provider.token:
-        print("  ✗ provider.token 为空")
+    token = cfg.effective_token()
+    if not token:
+        print("  ✗ TikHub token 为空（TIKHUB_TOKEN 和 provider.token 均未设置）")
         ok = False
     else:
-        print(f"  ✓ token: {cfg.provider.token[:6]}…{cfg.provider.token[-4:]}（已打码）")
+        print(f"  ✓ token: {token[:6]}…{token[-4:]}（已打码，来源：{cfg.token_source()}）")
     if cfg.export.enabled and cfg.export.dir:
         p = Path(cfg.export.dir).expanduser()
         try:
@@ -468,13 +473,13 @@ def cmd_check(args) -> int:
 
     print("\n数据目录检查")
     try:
-        paths.ensure_dirs()
-        print(f"  ✓ 数据目录: {paths.data_dir()}")
+        paths.ensure_dirs(cfg.storage.data_dir)
+        print(f"  ✓ 数据目录: {paths.data_dir(cfg.storage.data_dir)}")
     except OSError as exc:
-        print(f"  ✗ 数据目录不可写: {paths.data_dir()} ({exc})")
+        print(f"  ✗ 数据目录不可写: {paths.data_dir(cfg.storage.data_dir)} ({exc})")
         ok = False
 
-    with Store() as store:
+    with _open_store(cfg) as store:
         st = store.stats()
         print(f"  ✓ 数据库可读写，FTS5 {'可用' if st['fts_available'] else '不可用'}")
         print(f"  ✓ 已收录 {st['articles']} 篇")
@@ -484,11 +489,11 @@ def cmd_check(args) -> int:
         for a in cfg.accounts:
             print(f"  ✓ {a.nick or a.username} → {a.username}")
 
-    if ok and cfg.provider.token:
+    if ok and token:
         print("\n上游连通性测试（会消耗 1 次调用）…")
         try:
             client = TikHubClient(
-                token=cfg.provider.token,
+                token=token,
                 base_url=cfg.provider.base_url,
                 timeout=cfg.provider.timeout,
                 max_retries=1,

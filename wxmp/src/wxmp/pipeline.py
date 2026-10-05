@@ -86,7 +86,7 @@ def collect_account(
             raw_path = ""
             if cfg.storage.keep_raw:
                 p = write_raw_atomic(
-                    paths.raw_dir(), username, published, ident, detail["envelope"]
+                    paths.raw_dir(cfg.storage.data_dir), username, published, ident, detail["envelope"]
                 )
                 raw_path = str(p)
 
@@ -158,7 +158,7 @@ def run(
         return summary
 
     client = TikHubClient(
-        token=cfg.provider.token,
+        token=cfg.effective_token(),
         base_url=cfg.provider.base_url,
         timeout=cfg.provider.timeout,
         max_retries=cfg.provider.retry.max,

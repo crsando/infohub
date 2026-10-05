@@ -72,15 +72,14 @@
 |---|---|---|---|
 | `name` | string | `"tikhub"` | 上游名。目前只支持 tikhub |
 | `base_url` | string | `"https://api.tikhub.io"` | 接口根地址 |
-| `token` | string | `""` | **必填**。TikHub 的 API key，明文存放 |
+| `token` | string | `""` | TikHub API key；`TIKHUB_TOKEN` 环境变量有值时优先使用环境变量 |
 | `timeout` | int | `120` | 单次请求超时（秒）。正文接口实测要 8–17 秒，别设太小 |
 | `retry.max` | int | `3` | 失败重试次数 |
 | `retry.backoff` | int[] | `[2,5,15]` | 每次重试前的等待秒数 |
 | `rate_limit.qps` | float | `1` | 每秒最多几次请求。设为 `0` 表示不限速 |
 
-**关于 token 明文存放**：这是刻意的。wxmp 是单机自用工具，不做环境变量间接层、
-不做密钥管理、不做加密存储 —— 多一层抽象只增加心智负担而不带来实际安全收益。
-唯一需要遵守的是：**别把 config.json 提交进 git**。
+**凭据优先级**：`TIKHUB_TOKEN` 环境变量 > `provider.token` 配置字段。环境变量不会被写回配置文件。
+配置字段仍是明文存放，唯一需要遵守的是：**别把 config.json 提交进 git**。
 
 ---
 
@@ -103,7 +102,7 @@
 
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
-| `data_dir` | string\|null | `null` | 数据目录。`null` = 用 `~/.local/share/wxmp` |
+| `data_dir` | string\|null | `null` | 数据目录。`null` = 用 `~/.local/share/wxmp`；`WXMP_DATA_DIR` 环境变量优先 |
 | `keep_raw` | bool | `true` | 是否保留原始响应 JSON |
 
 **`keep_raw` 建议一直开着。** 它是换上游时的救命底牌 ——
@@ -128,6 +127,7 @@
 | `include_images` | bool | `false` | 预留，尚未实现 |
 
 `filename` 可用变量：`{date}`（发布日期）、`{title}`、`{account}`、`{id}`。
+导出时还会在扩展名前附加文章 URL 的稳定短标识，避免同日同标题的文章互相覆盖。
 
 文件名里的非法字符（`<>:"/\|?*`）会被替换成 `_`。
 

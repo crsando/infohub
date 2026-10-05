@@ -45,7 +45,7 @@ class TikHubClient:
         if not token:
             raise AuthError(
                 "未配置上游 token",
-                hint="在 config.json 的 provider.token 填入 TikHub 的 API key",
+                hint="设置 TIKHUB_TOKEN，或在 config.json 的 provider.token 填入 TikHub API key",
             )
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
@@ -101,11 +101,11 @@ class TikHubClient:
                     raise AuthError(
                         f"上游拒绝请求 (HTTP {resp.status_code})",
                         hint="403 通常是缺少 User-Agent 被 Cloudflare 拦截；"
-                        "若 UA 正常则检查 provider.token 是否有效",
+                        "若 UA 正常则检查 TIKHUB_TOKEN 或 provider.token 是否有效",
                     )
                 raise AuthError(
                     f"凭据无效 (HTTP {resp.status_code})",
-                    hint="检查 config.json 里的 provider.token",
+                    hint="检查 TIKHUB_TOKEN 或 config.json 里的 provider.token",
                 )
 
             if resp.status_code == 429:
@@ -155,6 +155,9 @@ class TikHubClient:
         out: list[dict] = []
         for it in items[:limit]:
             jump = it.get("jumpInfo") or {}
+            user_name = jump.get("userName") or it.get("userName") or ""
+            if it.get("accTypeName") == "视频号" or str(user_name).endswith("@finder"):
+                continue
             source = it.get("source") or {}
             # title 带 <em class="highlight"> 高亮标签，清掉再用
             raw_title = str(it.get("title") or "")
@@ -162,8 +165,8 @@ class TikHubClient:
             out.append(
                 {
                     "nick": clean,
-                    "username": it.get("userName") or jump.get("aliasName") or "",
-                    "user_name": it.get("userName") or "",
+                    "username": jump.get("aliasName") or user_name,
+                    "user_name": user_name,
                     "media_name": source.get("title") or "",
                     "desc": _strip_tags(str(it.get("desc") or it.get("acctDesc") or "")),
                     "doc_id": it.get("docID") or "",

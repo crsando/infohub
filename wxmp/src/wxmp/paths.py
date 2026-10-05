@@ -52,11 +52,13 @@ def resolve_config_path() -> Path:
     return default_config_path()
 
 
-def data_dir() -> Path:
+def data_dir(configured: str | None = None) -> Path:
     """数据目录：SQLite、raw JSON、日志都在这里。"""
     override = os.environ.get(ENV_DATA_DIR)
     if override:
         return Path(override).expanduser()
+    if configured:
+        return Path(configured).expanduser()
     xdg = os.environ.get("XDG_DATA_HOME")
     base = Path(xdg).expanduser() if xdg else Path.home() / ".local" / "share"
     return base / APP_NAME
@@ -71,23 +73,23 @@ def cache_dir() -> Path:
     return base / APP_NAME
 
 
-def db_path() -> Path:
-    return data_dir() / "wxmp.db"
+def db_path(configured: str | None = None) -> Path:
+    return data_dir(configured) / "wxmp.db"
 
 
-def raw_dir() -> Path:
+def raw_dir(configured: str | None = None) -> Path:
     """原始响应存档根目录。
 
     永久保留。上游接口一变，这份存档就是无损重建全部衍生数据的地基。
     """
-    return data_dir() / "raw"
+    return data_dir(configured) / "raw"
 
 
-def log_dir() -> Path:
-    return data_dir() / "logs"
+def log_dir(configured: str | None = None) -> Path:
+    return data_dir(configured) / "logs"
 
 
-def ensure_dirs() -> None:
+def ensure_dirs(configured: str | None = None) -> None:
     """创建运行所需的全部目录（幂等）。"""
-    for p in (data_dir(), raw_dir(), log_dir()):
+    for p in (data_dir(configured), raw_dir(configured), log_dir(configured)):
         p.mkdir(parents=True, exist_ok=True)

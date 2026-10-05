@@ -1,0 +1,10 @@
+# uv / Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local credentials and runtime data
+config.json
+*.local.json
+data/

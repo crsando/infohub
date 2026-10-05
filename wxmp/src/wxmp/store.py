@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -155,19 +156,19 @@ def canonical_url(url: str) -> str:
 
 
 def url_id(url: str) -> str:
-    """人类可读的短标识（mid_idx_sn），用于文件名与日志。"""
+    """文章短标识；无 mid 的短链接使用文件名安全的 URL 哈希。"""
     import urllib.parse
 
     try:
         q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
     except Exception:
-        return url[-40:]
+        q = {}
     mid = (q.get("mid") or [""])[0]
     idx = (q.get("idx") or [""])[0]
     sn = (q.get("sn") or [""])[0]
     if mid:
         return f"{mid}_{idx or '1'}_{sn[:8]}"
-    return url[-40:]
+    return hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
 
 
 class Store:

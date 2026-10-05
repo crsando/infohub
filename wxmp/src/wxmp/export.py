@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import logging
 import re
 from pathlib import Path
@@ -130,6 +131,9 @@ def export_articles(
             account=sanitize_filename(nick),
             id=url_id(row["url"]),
         )
+        name = Path(fname)
+        identity = hashlib.sha256(row["url"].encode("utf-8")).hexdigest()[:12]
+        fname = str(name.with_name(f"{name.stem} [{identity}]{name.suffix}"))
         target = out_dir / fname
 
         # 原子写：先写同目录临时文件再 replace，避免半截文件
