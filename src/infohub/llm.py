@@ -34,19 +34,23 @@ def build_payload(item: dict[str, Any], config: LLMConfig) -> dict[str, Any]:
         "body": body,
     }
     try:
-        user_content = config.user_prompt_template.format(**values)
+        user_content = config.get_user_template().format(**values)
     except (KeyError, ValueError) as exc:
-        raise LLMError(f"llm.user_prompt_template 无效: {exc}") from exc
-    return {
+        raise LLMError(f"user_prompt_template 无效: {exc}") from exc
+
+    payload = {
         "model": config.model,
         "messages": [
-            {"role": "system", "content": config.system_prompt},
+            {"role": "system", "content": config.get_system_prompt()},
             {"role": "user", "content": user_content},
         ],
         "temperature": config.temperature,
         "max_tokens": config.max_tokens,
-        "chat_template_kwargs": dict(config.chat_template_kwargs),
     }
+
+    # Merge extra_params (e.g., chat_template_kwargs for Qwen)
+    payload.update(config.extra_params)
+    return payload
 
 
 def limit_text(text: str, limit: int) -> str:

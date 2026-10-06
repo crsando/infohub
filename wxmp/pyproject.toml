@@ -11,7 +11,11 @@ license = { text = "MIT" }
 # 依赖越少，长期无人值守运行时踩雷的面越小。
 dependencies = [
     "requests==2.32.3",
+    "infohub-common",
 ]
+
+[tool.uv.sources]
+infohub-common = { path = "../infohub_common", editable = true }
 
 [dependency-groups]
 # 仅开发期：uv sync --group dev

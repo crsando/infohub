@@ -161,6 +161,11 @@ wheels = [
 ]
 
 [[package]]
+name = "infohub-common"
+version = "0.1.0"
+source = { editable = "../infohub_common" }
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -241,6 +246,7 @@ name = "wxmp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "infohub-common" },
     { name = "requests" },
 ]
 
@@ -250,7 +256,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "requests", specifier = "==2.32.3" }]
+requires-dist = [
+    { name = "infohub-common", editable = "../infohub_common" },
+    { name = "requests", specifier = "==2.32.3" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8" }]

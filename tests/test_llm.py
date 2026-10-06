@@ -1,4 +1,4 @@
-from infohub.config import LLMConfig
+from infohub.config import LLMConfig, DEFAULT_PROMPTS
 from infohub.llm import LLMClient, build_payload
 
 
@@ -28,15 +28,14 @@ def test_payload_has_top_level_thinking_option():
 
 
 def test_payload_uses_prompts_from_config():
-    config = LLMConfig(
-        system_prompt="系统提示",
-        user_prompt_template="标题={title}\n正文={body}",
-    )
+    """Prompts now come from DEFAULT_PROMPTS based on prompt_version."""
+    config = LLMConfig(prompt_version="summary-v1")
     payload = build_payload(
         {"source": "wxmp", "title": "配置标题", "body": "配置正文"}, config
     )
-    assert payload["messages"][0]["content"] == "系统提示"
-    assert payload["messages"][1]["content"] == "标题=配置标题\n正文=配置正文"
+    assert payload["messages"][0]["content"] == DEFAULT_PROMPTS["summary-v1"]["system"]
+    assert "配置标题" in payload["messages"][1]["content"]
+    assert "配置正文" in payload["messages"][1]["content"]
 
 
 def test_client_extracts_content_without_reasoning():

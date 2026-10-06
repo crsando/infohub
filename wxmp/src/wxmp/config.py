@@ -86,6 +86,17 @@ class ExportConfig:
 
 
 @dataclass
+class FeedConfig:
+    enabled: bool = False
+    path: str = ""
+    title: str = "公众号订阅"
+    link: str = ""
+    description: str = ""
+    max_items: int = 100
+    per_account: bool = False
+
+
+@dataclass
 class Account:
     nick: str = ""
     username: str = ""
@@ -140,6 +151,7 @@ class Config:
     schedule: ScheduleConfig = field(default_factory=ScheduleConfig)
     storage: StorageConfig = field(default_factory=StorageConfig)
     export: ExportConfig = field(default_factory=ExportConfig)
+    feed: FeedConfig = field(default_factory=FeedConfig)
     accounts: list[Account] = field(default_factory=list)
     path: Path | None = None
 
@@ -175,6 +187,7 @@ class Config:
         sched_raw = raw.get("schedule") or {}
         stor_raw = raw.get("storage") or {}
         exp_raw = raw.get("export") or {}
+        feed_raw = raw.get("feed") or {}
 
         cfg = cls(
             version=int(raw.get("version", CURRENT_VERSION)),
@@ -207,6 +220,15 @@ class Config:
                 filename=str(exp_raw.get("filename", "{date} {title}.md")),
                 bold_keywords=bool(exp_raw.get("bold_keywords", True)),
                 include_images=bool(exp_raw.get("include_images", False)),
+            ),
+            feed=FeedConfig(
+                enabled=bool(feed_raw.get("enabled", False)),
+                path=str(feed_raw.get("path") or ""),
+                title=str(feed_raw.get("title") or "公众号订阅"),
+                link=str(feed_raw.get("link") or ""),
+                description=str(feed_raw.get("description") or ""),
+                max_items=int(feed_raw.get("max_items", 100)),
+                per_account=bool(feed_raw.get("per_account", False)),
             ),
             accounts=[Account.from_dict(a) for a in (raw.get("accounts") or [])],
         )
@@ -275,6 +297,15 @@ class Config:
                 "filename": self.export.filename,
                 "bold_keywords": self.export.bold_keywords,
                 "include_images": self.export.include_images,
+            },
+            "feed": {
+                "enabled": self.feed.enabled,
+                "path": self.feed.path,
+                "title": self.feed.title,
+                "link": self.feed.link,
+                "description": self.feed.description,
+                "max_items": self.feed.max_items,
+                "per_account": self.feed.per_account,
             },
             "accounts": [a.to_dict() for a in self.accounts],
         }

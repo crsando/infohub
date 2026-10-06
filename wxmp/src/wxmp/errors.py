@@ -5,30 +5,15 @@
 
 from __future__ import annotations
 
-
-class ExitCode:
-    OK = 0
-    GENERIC = 1
-    USAGE = 2
-    CONFIG = 3
-    AUTH = 4
-    UPSTREAM = 5
-    NEEDS_DISAMBIGUATION = 6
+from infohub_common.errors import BaseError, ExitCode
 
 
-class WxmpError(Exception):
+class WxmpError(BaseError):
     """所有预期内错误的基类。
 
     `exit_code` 决定进程退出码；`hint` 是给人看的一句话建议。
     非预期异常（真 bug）不继承本类，让它照常抛栈，便于排查。
     """
-
-    exit_code: int = ExitCode.GENERIC
-
-    def __init__(self, message: str, hint: str | None = None) -> None:
-        super().__init__(message)
-        self.message = message
-        self.hint = hint
 
     def render(self) -> str:
         out = f"错误: {self.message}"

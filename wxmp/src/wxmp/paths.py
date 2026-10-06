@@ -14,12 +14,15 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from infohub_common.paths import (
+    cache_dir as _cache_dir,
+    config_dir as _config_dir,
+    data_dir as _data_dir,
+    resolve_config_path as _resolve_config_path,
+)
+
 APP_NAME = "wxmp"
-
-# config.json 的环境变量名。整个工具只有这一个环境变量是"必需知道"的。
 ENV_CONFIG = "WXMP_CONFIG"
-
-# 允许用环境变量覆盖各个目录，方便测试与多实例部署。
 ENV_CONFIG_DIR = "WXMP_CONFIG_DIR"
 ENV_DATA_DIR = "WXMP_DATA_DIR"
 ENV_CACHE_DIR = "WXMP_CACHE_DIR"
@@ -27,12 +30,7 @@ ENV_CACHE_DIR = "WXMP_CACHE_DIR"
 
 def config_dir() -> Path:
     """配置文件所在目录。"""
-    override = os.environ.get(ENV_CONFIG_DIR)
-    if override:
-        return Path(override).expanduser()
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    base = Path(xdg).expanduser() if xdg else Path.home() / ".config"
-    return base / APP_NAME
+    return _config_dir(APP_NAME, ENV_CONFIG_DIR)
 
 
 def default_config_path() -> Path:
@@ -46,10 +44,7 @@ def resolve_config_path() -> Path:
     注意：这里只负责"算出路径"，不判断文件是否存在 ——
     是否存在由 config.py 负责，因为 `wxmp init` 需要往这个不存在的路径写。
     """
-    override = os.environ.get(ENV_CONFIG)
-    if override:
-        return Path(override).expanduser()
-    return default_config_path()
+    return _resolve_config_path(APP_NAME, ENV_CONFIG)
 
 
 def data_dir(configured: str | None = None) -> Path:
@@ -59,18 +54,11 @@ def data_dir(configured: str | None = None) -> Path:
         return Path(override).expanduser()
     if configured:
         return Path(configured).expanduser()
-    xdg = os.environ.get("XDG_DATA_HOME")
-    base = Path(xdg).expanduser() if xdg else Path.home() / ".local" / "share"
-    return base / APP_NAME
+    return _data_dir(APP_NAME, None)
 
 
 def cache_dir() -> Path:
-    override = os.environ.get(ENV_CACHE_DIR)
-    if override:
-        return Path(override).expanduser()
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    base = Path(xdg).expanduser() if xdg else Path.home() / ".cache"
-    return base / APP_NAME
+    return _cache_dir(APP_NAME, ENV_CACHE_DIR)
 
 
 def db_path(configured: str | None = None) -> Path:

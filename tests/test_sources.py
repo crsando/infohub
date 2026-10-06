@@ -30,7 +30,7 @@ def test_read_wxmp_database(tmp_path: Path):
     )
     conn.commit()
     conn.close()
-    rows = read_source(SourceConfig("wxmp", database=str(database)), tmp_path)
+    rows = read_source("wxmp", SourceConfig(enabled=True, database=str(database)), tmp_path)
     assert rows[0]["item_key"].startswith("wxmp:http://")
     assert rows[0]["author"] == "测试公众号"
     assert rows[0]["content_hash"]
@@ -52,6 +52,6 @@ def test_read_xnews_database(tmp_path: Path):
     )
     conn.commit()
     conn.close()
-    rows = read_source(SourceConfig("xnews", database=str(database)), tmp_path)
+    rows = read_source("xnews", SourceConfig(enabled=True, database=str(database)), tmp_path)
     assert rows[0]["item_key"] == "xnews:123"
     assert rows[0]["title"] == "第一行"

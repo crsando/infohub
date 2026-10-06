@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import sqlite3
 import subprocess
 import time
 import urllib.parse
@@ -12,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from infohub_common.store import connect_readonly
 from .config import SourceConfig
 from .errors import SourceError
 
@@ -31,12 +31,12 @@ def resolve_database(source: SourceConfig, repo_root: Path) -> Path:
     return path if path.is_absolute() else repo_root / path
 
 
-def run_source(source: SourceConfig, repo_root: Path, timeout: int = 1800) -> SourceRunResult:
+def run_source(name: str, source: SourceConfig, repo_root: Path, timeout: int = 1800) -> SourceRunResult:
     if not source.run_command:
-        return SourceRunResult(source.name, "skipped", error="未配置 run_command")
+        return SourceRunResult(name, "skipped", error="未配置 run_command")
     started = time.monotonic()
     environment = os.environ.copy()
-    config_env = {"wxmp": "WXMP_CONFIG", "xnews": "XNEWS_CONFIG"}.get(source.name)
+    config_env = {"wxmp": "WXMP_CONFIG", "xnews": "XNEWS_CONFIG"}.get(name)
     if config_env and source.config:
         config_path = Path(source.config).expanduser()
         if not config_path.is_absolute():
@@ -54,14 +54,14 @@ def run_source(source: SourceConfig, repo_root: Path, timeout: int = 1800) -> So
         )
     except FileNotFoundError as exc:
         return SourceRunResult(
-            source.name,
+            name,
             "error",
             duration_ms=int((time.monotonic() - started) * 1000),
             error=f"无法执行 {source.run_command[0]}: {exc}",
         )
     except subprocess.TimeoutExpired:
         return SourceRunResult(
-            source.name,
+            name,
             "error",
             duration_ms=int((time.monotonic() - started) * 1000),
             error=f"采集超过 {timeout} 秒仍未结束",
@@ -69,7 +69,7 @@ def run_source(source: SourceConfig, repo_root: Path, timeout: int = 1800) -> So
     output = (completed.stdout or "")[-4000:]
     stderr = (completed.stderr or "")[-4000:]
     return SourceRunResult(
-        source.name,
+        name,
         "ok" if completed.returncode == 0 else "error",
         returncode=completed.returncode,
         duration_ms=int((time.monotonic() - started) * 1000),
@@ -78,15 +78,15 @@ def run_source(source: SourceConfig, repo_root: Path, timeout: int = 1800) -> So
     )
 
 
-def read_source(source: SourceConfig, repo_root: Path) -> list[dict[str, Any]]:
+def read_source(name: str, source: SourceConfig, repo_root: Path) -> list[dict[str, Any]]:
     path = resolve_database(source, repo_root)
     if not path.exists():
-        raise SourceError(f"{source.name} 数据库不存在: {path}", "先运行对应的采集器，或修改 sources.*.database")
-    if source.name == "wxmp":
+        raise SourceError(f"{name} 数据库不存在: {path}", "先运行对应的采集器，或修改 sources.*.database")
+    if name == "wxmp":
         return _read_wxmp(path)
-    if source.name == "xnews":
+    if name == "xnews":
         return _read_xnews(path)
-    raise SourceError(f"不支持的数据源: {source.name}")
+    raise SourceError(f"不支持的数据源: {name}")
 
 
 def _connect_readonly(path: Path) -> sqlite3.Connection:
@@ -100,7 +100,7 @@ def _connect_readonly(path: Path) -> sqlite3.Connection:
 
 
 def _read_wxmp(path: Path) -> list[dict[str, Any]]:
-    connection = _connect_readonly(path)
+    connection = connect_readonly(path)
     try:
         rows = connection.execute(
             """
@@ -111,7 +111,7 @@ def _read_wxmp(path: Path) -> list[dict[str, Any]]:
             ORDER BY a.published ASC, a.url ASC
             """
         ).fetchall()
-    except sqlite3.Error as exc:
+    except Exception as exc:
         raise SourceError(f"读取 wxmp.articles 失败: {exc}") from exc
     finally:
         connection.close()
@@ -136,7 +136,7 @@ def _read_wxmp(path: Path) -> list[dict[str, Any]]:
 
 
 def _read_xnews(path: Path) -> list[dict[str, Any]]:
-    connection = _connect_readonly(path)
+    connection = connect_readonly(path)
     try:
         rows = connection.execute(
             """
@@ -145,7 +145,7 @@ def _read_xnews(path: Path) -> list[dict[str, Any]]:
             FROM posts ORDER BY COALESCE(created_at, collected_at) ASC, post_id ASC
             """
         ).fetchall()
-    except sqlite3.Error as exc:
+    except Exception as exc:
         raise SourceError(f"读取 xnews.posts 失败: {exc}") from exc
     finally:
         connection.close()

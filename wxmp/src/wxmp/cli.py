@@ -323,11 +323,53 @@ def cmd_schedule(args) -> int:
 def _do_run(cfg: Config, account_keys=None, pages: int = 1, verbose: bool = False) -> int:
     with _open_store(cfg) as store:
         def _export(summary):
-            if not cfg.export.enabled or not cfg.export.dir:
-                return
-            paths_written = export_articles(store, cfg, only_unexported=True)
-            if paths_written:
-                print(f"已导出 {len(paths_written)} 篇 Markdown 到 {cfg.export.dir}")
+            # 导出 Markdown
+            if cfg.export.enabled and cfg.export.dir:
+                paths_written = export_articles(store, cfg, only_unexported=True)
+                if paths_written:
+                    print(f"已导出 {len(paths_written)} 篇 Markdown 到 {cfg.export.dir}")
+
+            # 生成 RSS feed
+            if cfg.feed.enabled and cfg.feed.path:
+                try:
+                    from .feed import write_feed
+
+                    # 读取所有文章
+                    articles_rows = store.conn.execute(
+                        """
+                        SELECT url, title, digest, content, published, account
+                        FROM articles
+                        ORDER BY published DESC
+                        """,
+                    ).fetchall()
+
+                    articles = [
+                        {
+                            "url": row[0],
+                            "title": row[1],
+                            "digest": row[2],
+                            "content": row[3],
+                            "published": row[4],
+                            "account": row[5],
+                        }
+                        for row in articles_rows
+                    ]
+
+                    if articles:
+                        # 构建账号字典
+                        accounts = {
+                            a.username: {
+                                "nick": a.nick or a.username,
+                                "media_name": a.media_name,
+                            }
+                            for a in cfg.accounts
+                        }
+
+                        # 生成 feed
+                        written = write_feed(articles, accounts, cfg.feed)
+                        print(f"已生成 {len(written)} 个 RSS feed")
+                except Exception as exc:
+                    print(f"生成 RSS feed 失败: {exc}", file=sys.stderr)
 
         summary = run_pipeline(
             cfg,
@@ -517,6 +559,78 @@ def cmd_check(args) -> int:
     return ExitCode.OK if ok else ExitCode.CONFIG
 
 
+def cmd_feed(args) -> int:
+    cfg = _load_config()
+
+    # 从命令行参数或配置文件获取输出路径
+    output_path = args.output or cfg.feed.path
+    if not output_path:
+        raise ConfigError(
+            "未指定输出路径",
+            hint="使用 --output 参数，或在 config.json 的 feed.path 配置",
+        )
+
+    # 从数据库读取文章和账号信息
+    with _open_store(cfg) as store:
+        # 读取所有文章（按发布时间倒序）
+        articles_rows = store.conn.execute(
+            """
+            SELECT url, title, digest, content, published, account
+            FROM articles
+            ORDER BY published DESC
+            """,
+        ).fetchall()
+
+        # 转换为字典列表
+        articles = [
+            {
+                "url": row[0],
+                "title": row[1],
+                "digest": row[2],
+                "content": row[3],
+                "published": row[4],
+                "account": row[5],
+            }
+            for row in articles_rows
+        ]
+
+        if not articles:
+            print("数据库中没有文章，无法生成 feed")
+            return ExitCode.OK
+
+    # 构建账号字典
+    accounts = {
+        a.username: {
+            "nick": a.nick or a.username,
+            "media_name": a.media_name,
+        }
+        for a in cfg.accounts
+    }
+
+    # 临时构建 FeedConfig（优先使用命令行参数）
+    from .config import FeedConfig
+    from .feed import write_feed
+
+    feed_cfg = FeedConfig(
+        enabled=True,
+        path=output_path,
+        title=cfg.feed.title or "公众号订阅",
+        link=cfg.feed.link or "",
+        description=cfg.feed.description or "",
+        max_items=cfg.feed.max_items or 100,
+        per_account=cfg.feed.per_account,
+    )
+
+    # 生成 feed
+    written = write_feed(articles, accounts, feed_cfg)
+
+    print(f"✓ 已生成 {len(written)} 个 feed:")
+    for p in written:
+        print(f"  {p}")
+
+    return ExitCode.OK
+
+
 def _parse_since(value: str | None) -> int | None:
     """支持 2026-01-01、7d、24h 三种写法。"""
     if not value:
@@ -625,6 +739,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("check", help="配置与连通性体检")
     sp.set_defaults(func=cmd_check)
+
+    sp = sub.add_parser("feed", help="生成 RSS feed")
+    sp.add_argument("--output", "-o", help="feed 文件输出路径（优先于配置文件）")
+    sp.set_defaults(func=cmd_feed)
 
     return p
 

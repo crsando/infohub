@@ -2,24 +2,11 @@
 
 from __future__ import annotations
 
-
-class ExitCode:
-    OK = 0
-    GENERIC = 1
-    USAGE = 2
-    CONFIG = 3
-    AUTH = 4
-    UPSTREAM = 5
-    NEEDS_DISAMBIGUATION = 6
+from infohub_common.errors import BaseError, ExitCode
 
 
-class XnewsError(Exception):
-    exit_code = ExitCode.GENERIC
-
-    def __init__(self, message: str, hint: str | None = None) -> None:
-        super().__init__(message)
-        self.message = message
-        self.hint = hint
+class XnewsError(BaseError):
+    """所有预期内错误的基类。"""
 
     def render(self) -> str:
         result = f"错误: {self.message}"

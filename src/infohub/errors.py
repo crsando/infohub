@@ -1,29 +1,51 @@
-from __future__ import annotations
+"""Application-specific errors for infohub."""
+
+from infohub_common.errors import (
+    AuthError,
+    BaseError,
+    ConfigError,
+    DisambiguationError,
+    ExitCode,
+    UpstreamError,
+    UsageError,
+)
+
+__all__ = [
+    "BaseError",
+    "ExitCode",
+    "ConfigError",
+    "AuthError",
+    "UpstreamError",
+    "UsageError",
+    "DisambiguationError",
+    "InfohubError",
+    "LLMError",
+    "MemosError",
+    "SourceError",
+    "StoreError",
+]
 
 
-class InfohubError(Exception):
-    """Expected operational error with a user-facing Chinese message."""
-
-    def __init__(self, message: str, hint: str = "") -> None:
-        super().__init__(message)
-        self.message = message
-        self.hint = hint
-
-    def render(self) -> str:
-        return f"{self.message}\n提示：{self.hint}" if self.hint else self.message
+# Alias for backward compatibility
+InfohubError = BaseError
 
 
-class ConfigError(InfohubError):
+class LLMError(UpstreamError):
+    """LLM service error."""
     pass
 
 
-class SourceError(InfohubError):
+class MemosError(UpstreamError):
+    """Memos service error."""
     pass
 
 
-class LLMError(InfohubError):
+class SourceError(BaseError):
+    """Source database error."""
     pass
 
 
-class MemosError(InfohubError):
+class StoreError(BaseError):
+    """Local store error."""
     pass
+

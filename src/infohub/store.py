@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
+from infohub_common.store import init_db
 from . import paths
 
 SCHEMA_VERSION = 1
@@ -104,8 +105,7 @@ class Store:
             pass
         self.conn = sqlite3.connect(str(self.path))
         self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA foreign_keys = ON")
-        self.conn.executescript(SCHEMA_SQL)
+        init_db(self.conn, SCHEMA_SQL)
         self.conn.execute(
             "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', ?)",
             (str(SCHEMA_VERSION),),

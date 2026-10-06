@@ -19,15 +19,32 @@ from .store import Store
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def get_db_path() -> Path:
+    """Get timeline.db path."""
+    return paths.data_dir("infohub", "INFOHUB_DATA_DIR") / "timeline.db"
+
+
+def get_data_dir() -> Path:
+    """Get data directory."""
+    return paths.data_dir("infohub", "INFOHUB_DATA_DIR")
+
+
+def get_llm_raw_dir() -> Path:
+    """Get LLM raw response directory."""
+    return paths.data_dir("infohub", "INFOHUB_DATA_DIR") / "raw" / "llm"
+
+
+
 def cmd_init(args: argparse.Namespace) -> int:
-    target = paths.resolve_config_path()
+    target = paths.resolve_config_path("infohub", "INFOHUB_CONFIG")
     if target.exists() and not args.force:
         raise ConfigError(f"配置已存在: {target}", "使用 `infohub init --force` 覆盖")
     config = Config.default()
     config.save(target)
-    paths.ensure_dirs()
+    data_path = paths.data_dir("infohub", "INFOHUB_DATA_DIR")
+    paths.ensure_dirs(target.parent, data_path)
     print(f"已创建配置: {target}")
-    print(f"数据目录: {paths.data_dir()}")
+    print(f"数据目录: {data_path}")
     return 0
 
 
@@ -37,9 +54,11 @@ def load_config() -> Config:
 
 def cmd_check(args: argparse.Namespace) -> int:
     config = load_config()
-    paths.ensure_dirs()
-    print(f"配置文件: {config.path}")
-    print(f"数据目录: {paths.data_dir()}")
+    config_path = paths.resolve_config_path("infohub", "INFOHUB_CONFIG")
+    data_path = paths.data_dir("infohub", "INFOHUB_DATA_DIR")
+    paths.ensure_dirs(config_path.parent, data_path)
+    print(f"配置文件: {config_path}")
+    print(f"数据目录: {data_path}")
     print(f"Qwen: {config.llm.effective_base_url()} / {config.llm.model}")
     print(f"Memos: {config.memos.effective_base_url()}{config.memos.endpoint}")
     ok = True
@@ -65,14 +84,15 @@ def cmd_check(args: argparse.Namespace) -> int:
         except InfohubError as exc:
             print(f"Memos: {exc.render()}", file=sys.stderr)
             ok = False
-    with Store(paths.db_path()) as store:
+    db_path = data_path / "timeline.db"
+    with Store(db_path) as store:
         print(f"timeline.db: {store.stats()}")
     return 0 if ok else 1
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     config = load_config()
-    with Store(paths.db_path()) as store:
+    with Store(get_db_path()) as store:
         result = run_pipeline(
             config,
             store,
@@ -90,7 +110,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_ingest(args: argparse.Namespace) -> int:
     config = load_config()
-    with Store(paths.db_path()) as store:
+    with Store(get_db_path()) as store:
         result = run_pipeline(
             config,
             store,
@@ -107,7 +127,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
 def cmd_summarize(args: argparse.Namespace) -> int:
     config = load_config()
-    with Store(paths.db_path()) as store:
+    with Store(get_db_path()) as store:
         ensure_summary_queue(config, store, limit=args.limit)
         success, failed, errors = summarize_pending(config, store, limit=args.limit)
     print(f"摘要完成: {success}，失败: {failed}")
@@ -118,7 +138,7 @@ def cmd_summarize(args: argparse.Namespace) -> int:
 
 def cmd_publish(args: argparse.Namespace) -> int:
     config = load_config()
-    with Store(paths.db_path()) as store:
+    with Store(get_db_path()) as store:
         success, failed, errors = publish_ready(config, store, limit=args.limit)
     print(f"Memos 发布完成: {success}，失败: {failed}")
     for error in errors[:10]:
@@ -127,14 +147,15 @@ def cmd_publish(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    with Store(paths.db_path()) as store:
+    with Store(get_db_path()) as store:
         print(json.dumps(store.stats(), ensure_ascii=False, indent=2))
     return 0
 
 
 def cmd_permissions(args: argparse.Namespace) -> int:
-    paths.fix_permissions()
-    print(f"已修复 infohub 数据目录权限: {paths.data_dir()}")
+    data_dir = get_data_dir()
+    paths.fix_permissions(data_dir)
+    print(f"已修复 infohub 数据目录权限: {data_dir}")
     return 0
 
 

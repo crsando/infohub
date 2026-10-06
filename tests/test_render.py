@@ -1,4 +1,4 @@
-from infohub.render import markdown_title, render_memo
+from infohub.memos import markdown_title, render_memo
 
 
 def test_render_uses_compact_linked_title_and_summary_body():
